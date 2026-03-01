@@ -1,0 +1,47 @@
+# Apple App Store Keywords (max 100 chars total)
+# Separate by comma, no spaces around commas
+journal,mood tracker,AI journal,life os,self improvement,daily planner,habit tracker,note taking,time capsule,wellness
+
+# Google Play Store Keywords (used in short description + long description)
+# Primary keywords (high search volume):
+- journal app
+- mood tracker
+- AI journal
+- daily planner
+- habit tracker
+- self improvement app
+- note taking app
+- personal diary
+- mental wellness
+- life organizer
+
+# Secondary keywords (medium volume):
+- AI life assistant
+- smart journal
+- mood log
+- sleep tracker
+- task manager
+- memory vault
+- time capsule app
+- reflection app
+- gratitude journal
+- personal operating system
+
+# Long-tail keywords:
+- AI powered journal app
+- best mood tracking app
+- daily reflection journal
+- write letter to future self
+- personal life management app
+- AI personal assistant app
+- intelligent journal with prompts
+- mood pattern analysis app
+
+# App subtitle (Apple, max 30 chars):
+Lumina — AI Life Journal & OS
+
+# Short description (Google Play, max 80 chars):
+Your AI-powered life journal. Track mood, memories, tasks & journal with Claude AI.
+
+# Promotional text (Apple, max 170 chars):
+Lumina helps you live intentionally. AI-powered journaling, mood tracking, smart task management, memory capture, and weekly life insights — all in one beautiful app.

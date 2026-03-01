@@ -20,6 +20,7 @@ class InsightType(str, Enum):
     - ``sleep_quality``    → Sleep trend analysis
     - ``growth``           → Personal development observation
     - ``alert``            → Actionable warning (e.g. burnout risk)
+    - ``greeting``         → Daily personalised greeting (cached 1 h)
     """
 
     WEEKLY_REPORT = "weekly_report"
@@ -28,6 +29,7 @@ class InsightType(str, Enum):
     SLEEP_QUALITY = "sleep_quality"
     GROWTH = "growth"
     ALERT = "alert"
+    GREETING = "greeting"
 
 
 class InsightResponse(BaseModel):

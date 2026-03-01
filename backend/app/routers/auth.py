@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.config import supabase_admin, supabase_client
 from app.middleware.auth_middleware import get_current_user
@@ -20,6 +22,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+# Rate limiter instance (re-uses same key func as main app)
+_limiter = Limiter(key_func=get_remote_address)
+
 
 @router.post(
     "/register",
@@ -27,7 +32,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user account",
 )
-async def register(payload: UserCreate) -> Token:
+@_limiter.limit("5/minute")
+async def register(request: Request, payload: UserCreate) -> Token:
     """Create a new Lumina account using Supabase Auth.
 
     Args:
@@ -84,7 +90,8 @@ async def register(payload: UserCreate) -> Token:
     status_code=status.HTTP_200_OK,
     summary="Login with email and password",
 )
-async def login(payload: UserLogin) -> Token:
+@_limiter.limit("10/minute")
+async def login(request: Request, payload: UserLogin) -> Token:
     """Authenticate an existing user and return a JWT.
 
     Args:

@@ -223,6 +223,139 @@ async def analyze_mood_pattern(
 
 
 @router.get(
+    "/greeting",
+    status_code=status.HTTP_200_OK,
+    summary="Get personalised daily greeting (cached 1 h)",
+)
+async def get_daily_greeting(
+    current_user: TokenData = Depends(get_current_user),
+) -> dict:
+    """Return an AI-generated personalised greeting for the current user.
+
+    The response is cached in the insights table for 1 hour to avoid
+    redundant Anthropic calls on every page refresh.
+
+    Args:
+        current_user: Injected from JWT.
+
+    Returns:
+        Dict with ``greeting`` str and ``cached`` bool.
+    """
+    from datetime import timedelta
+
+    now = datetime.now(timezone.utc)
+    one_hour_ago = now - timedelta(hours=1)
+
+    # Check for cached greeting from last hour
+    cached_rows = await db_select(
+        supabase_admin,
+        _INSIGHT_TABLE,
+        filters={"user_id": current_user.user_id, "insight_type": InsightType.GREETING.value},
+        order_by="generated_at desc",
+        limit=1,
+    )
+    if cached_rows:
+        cached_at_str = cached_rows[0]["generated_at"].replace("Z", "+00:00")
+        cached_at = datetime.fromisoformat(cached_at_str)
+        if cached_at > one_hour_ago:
+            return {"greeting": cached_rows[0]["content"], "cached": True}
+
+    # Fetch context data
+    mood_history = await _wellness.get_mood_history(user_id=current_user.user_id, limit=7)
+    mood_dicts = [{"mood": m.mood, "logged_at": m.logged_at.isoformat()} for m in mood_history]
+
+    tasks = await db_select(
+        supabase_admin, "tasks",
+        filters={"user_id": current_user.user_id},
+        order_by="created_at desc", limit=20,
+    )
+    tasks_today = [t for t in tasks if not t.get("is_completed")][:5]
+
+    journals = await db_select(
+        supabase_admin, "journal_entries",
+        filters={"user_id": current_user.user_id},
+        order_by="created_at desc", limit=1,
+    )
+    snippet = journals[0].get("content", "")[:120] if journals else None
+
+    first_name = "friend"
+    try:
+        user_resp = supabase_admin.auth.admin.get_user_by_id(current_user.user_id)
+        if user_resp.user and user_resp.user.user_metadata:
+            full = user_resp.user.user_metadata.get("full_name", "")
+            first_name = full.split()[0] if full.strip() else "friend"
+    except Exception:
+        pass
+
+    greeting = await _ai.generate_daily_greeting(
+        user_name=first_name,
+        mood_history=mood_dicts,
+        tasks_today=tasks_today,
+        last_journal_snippet=snippet,
+    )
+
+    # Cache the greeting
+    try:
+        await db_insert(supabase_admin, _INSIGHT_TABLE, {
+            "user_id": current_user.user_id,
+            "insight_type": InsightType.GREETING.value,
+            "title": f"Greeting — {now.strftime('%B %d, %Y %H:%M')}",
+            "content": greeting,
+            "data_snapshot": {},
+            "generated_at": now.isoformat(),
+        })
+    except Exception as exc:
+        logger.warning("Could not cache greeting: %s", exc)
+
+    return {"greeting": greeting, "cached": False}
+
+
+@router.get(
+    "/on-this-day",
+    status_code=status.HTTP_200_OK,
+    summary="Get 'On This Day' memory insight",
+)
+async def on_this_day(
+    current_user: TokenData = Depends(get_current_user),
+) -> dict:
+    """Find memories from this exact calendar date in previous years.
+
+    Generates a warm AI reflection if past memories are found.
+
+    Args:
+        current_user: Injected from JWT.
+
+    Returns:
+        Dict with ``memories`` (list), ``insight`` (str), and ``has_memories`` (bool).
+    """
+    now = datetime.now(timezone.utc)
+    month_day = now.strftime("%m-%d")
+
+    all_memories = await db_select(
+        supabase_admin, "memories",
+        filters={"user_id": current_user.user_id},
+        order_by="created_at desc", limit=200,
+    )
+
+    past_memories = [
+        m for m in all_memories
+        if m.get("created_at", "")[:10][5:] == month_day
+        and m.get("created_at", "")[:4] != str(now.year)
+    ]
+
+    if not past_memories:
+        return {"memories": [], "insight": "", "has_memories": False}
+
+    insight = await _ai.get_on_this_day_insight(memories_from_past_years=past_memories[:5])
+
+    return {
+        "memories": past_memories[:5],
+        "insight": insight,
+        "has_memories": True,
+    }
+
+
+@router.get(
     "/insight/history",
     response_model=list[InsightResponse],
     status_code=status.HTTP_200_OK,

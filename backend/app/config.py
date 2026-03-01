@@ -62,8 +62,18 @@ class Settings(BaseSettings):
     app_version: str = Field(default="1.0.0")
     debug: bool = Field(default=False)
     allowed_origins: list[str] = Field(
-        default=["http://localhost:3000", "http://localhost:8081", "exp://localhost:8081"],
-        description="CORS allowed origins",
+        default=[
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:5174",
+            "http://localhost:8081",
+            "exp://localhost:8081",
+            "https://lumina-app.vercel.app",
+            "https://lumina-life.vercel.app",
+        ],
+        description="CORS allowed origins — extend via ALLOWED_ORIGINS env var in production",
     )
 
 
