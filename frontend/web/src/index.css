@@ -244,23 +244,26 @@ textarea.field { resize: vertical; }
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(5, 5, 8, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 100;
   display: flex;
   align-items: flex-end;
   justify-content: center;
 }
 .modal-sheet {
-  background: var(--bg2);
+  background: rgba(17, 17, 24, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
   padding: 20px 20px 36px;
   width: 100%;
   max-width: 430px;
   max-height: 92dvh;
   overflow-y: auto;
-  border-top: 1px solid var(--border2);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
   scrollbar-width: none;
 }
 .modal-sheet::-webkit-scrollbar { display: none; }
@@ -324,16 +327,40 @@ textarea.field { resize: vertical; }
 .font-semibold { font-weight: 600; }
 .text-center { text-align: center; }
 
+/* ── Glassmorphism & Effects ── */
+.glass {
+  background: rgba(22, 22, 31, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-modal {
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glow-hover {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.glow-hover:hover {
+  box-shadow: 0 0 15px rgba(123,111,218,0.15);
+  border-color: rgba(123,111,218,0.3);
+}
+
 /* ── Skeleton ── */
 @keyframes shimmer {
-  0%   { background-position: -400px 0; }
-  100% { background-position:  400px 0; }
+  0%   { background-position: -500px 0; }
+  100% { background-position:  500px 0; }
 }
 .skeleton {
   border-radius: 8px;
-  background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.4s ease infinite;
+  background: linear-gradient(90deg, rgba(30, 30, 42, 0.4) 25%, rgba(60, 60, 80, 0.3) 50%, rgba(30, 30, 42, 0.4) 75%);
+  background-size: 500px 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
 }
 
 /* ── Range input ── */

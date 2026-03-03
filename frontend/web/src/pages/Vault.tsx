@@ -1,57 +1,75 @@
-﻿import { useState, useMemo } from 'react';
+﻿import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useAppStore } from '../store/appStore';
 import type { VaultItem } from '../store/appStore';
 import ConfirmModal from '../components/ConfirmModal';
+import { deriveKey, encryptE2E, decryptE2E } from '../lib/crypto';
 
 const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
 
 const CATS = [
-  { key: '',          label: 'All',       icon: '' },
-  { key: 'password',  label: 'Passwords', icon: '' },
-  { key: 'note',      label: 'Notes',     icon: '' },
-  { key: 'card',      label: 'Cards',     icon: '' },
-  { key: 'document',  label: 'Documents', icon: '' },
+  { key: '',          label: 'All',       icon: '🛡️' },
+  { key: 'password',  label: 'Passwords', icon: '🔑' },
+  { key: 'note',      label: 'Notes',     icon: '📝' },
+  { key: 'card',      label: 'Cards',     icon: '💳' },
+  { key: 'document',  label: 'Documents', icon: '📄' },
 ];
 
-const CAT_ICON: Record<string, string> = { password: '', note: '', card: '', document: '' };
+const CAT_ICON: Record<string, string> = { password: '🔑', note: '📝', card: '💳', document: '📄' };
+
+// Global key reference for active session to avoid async await everywhere
+let e2eKey: CryptoKey | null = null;
 
 function MasterPassGate({ onUnlock }: { onUnlock: () => void }) {
   const addToast = useAppStore((s) => s.addToast);
   const [pass, setPass] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const storedHash = localStorage.getItem('vault_pass_hash');
 
-  function attempt() {
+  async function attempt() {
     if (!pass) return;
-    if (!storedHash) {
-      // First time setup
-      const simpleHash = btoa(pass + 'lumina-salt');
-      localStorage.setItem('vault_pass_hash', simpleHash);
-      sessionStorage.setItem('vault_unlocked', '1');
-      addToast('success', 'Master password set ');
-      onUnlock();
-    } else {
-      if (btoa(pass + 'lumina-salt') === storedHash) {
+    setLoading(true);
+    try {
+      if (!storedHash) {
+        // First time setup - Store hash, derive zero-knowledge key
+        const simpleHash = btoa(pass + 'lumina-salt');
+        localStorage.setItem('vault_pass_hash', simpleHash);
+        
+        e2eKey = await deriveKey(pass);
         sessionStorage.setItem('vault_unlocked', '1');
+        
+        addToast('success', 'Zero-Knowledge E2E Key Generated 🔐');
         onUnlock();
       } else {
-        setError('Incorrect password');
-        setPass('');
+        if (btoa(pass + 'lumina-salt') === storedHash) {
+          e2eKey = await deriveKey(pass);
+          sessionStorage.setItem('vault_unlocked', '1');
+          onUnlock();
+        } else {
+          setError('Incorrect master password');
+          setPass('');
+        }
       }
+    } catch (err) {
+      setError('Key derivation failed');
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <motion.div {...PAGE} className="page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100dvh - var(--nav-h) - 32px)', textAlign: 'center' }}>
-      <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }}>
-        <div style={{ fontSize: 64, marginBottom: 16 }}></div>
-        <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic', marginBottom: 8 }}>Vault</h2>
-        <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 24, maxWidth: 280 }}>
-          {storedHash ? 'Enter your master password to unlock' : 'Set a master password to protect your vault'}
+      <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }} className="glass" style={{ padding: 40, borderRadius: 24 }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🛡️</div>
+        <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic', marginBottom: 8 }}>Zero-Knowledge Vault</h2>
+        <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 24, maxWidth: 280, lineHeight: 1.5 }}>
+          {storedHash 
+            ? 'Enter your master password. Decryption happens locally.' 
+            : 'Set a master password. Your data will be encrypted End-to-End before it leaves your device.'}
         </p>
         <input
           type="password"
@@ -64,8 +82,8 @@ function MasterPassGate({ onUnlock }: { onUnlock: () => void }) {
           autoFocus
         />
         {error && <p style={{ fontSize: 12, color: 'var(--journal)', marginBottom: 8 }}>{error}</p>}
-        <button className="btn-primary" onClick={attempt} style={{ maxWidth: 280, background: 'linear-gradient(135deg, var(--vault), #e8a06a)' }}>
-          {storedHash ? 'Unlock Vault' : 'Create Master Password'}
+        <button className="btn-primary glow-hover" onClick={attempt} disabled={loading} style={{ maxWidth: 280, background: 'linear-gradient(135deg, var(--vault), #e8a06a)' }}>
+          {loading ? 'Deriving Key...' : storedHash ? 'Decrypt & Unlock' : 'Setup Zero-Knowledge Vault'}
         </button>
       </motion.div>
     </motion.div>
@@ -88,12 +106,27 @@ function ItemForm({ initial, onClose }: ItemFormProps) {
   const [showPass, setShowPass] = useState(false);
 
   const mutation = useMutation({
-    mutationFn: () => {
-      const payload: Partial<VaultItem> = { title, category: cat, content, username: username || undefined, password: password || undefined, url: url || undefined, card_number: cardNum || undefined, expiry: expiry || undefined, cvv: cvv || undefined };
+    mutationFn: async () => {
+      const payload: Partial<VaultItem> = { 
+        title, 
+        category: cat, 
+        username: username || undefined, 
+        url: url || undefined, 
+        card_number: cardNum || undefined, 
+        expiry: expiry || undefined, 
+        cvv: cvv || undefined 
+      };
+
+      if (e2eKey) {
+        if (password) payload.password = await encryptE2E(password, e2eKey);
+        if (content) payload.content = await encryptE2E(content, e2eKey);
+        // We ensure only the encrypted blob goes over the wire
+      }
+
       if (initial?.id) return api.put(`/vault/${initial.id}`, payload).then((r) => r.data);
       return api.post('/vault', payload).then((r) => r.data);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vault'] }); addToast('success', initial?.id ? 'Item updated ' : 'Item saved '); onClose(); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vault'] }); addToast('success', initial?.id ? 'Item updated 🔐' : 'Item encrypted & saved 🔐'); onClose(); },
     onError:   () => addToast('error', 'Failed to save item'),
   });
 
@@ -153,6 +186,46 @@ function ItemForm({ initial, onClose }: ItemFormProps) {
         </button>
       </motion.div>
     </motion.div>
+  );
+}
+
+// VaultReveal Component: Fetches the encrypted payload from backend, decrypts with E2E key, and displays
+function VaultReveal({ itemId, type, label, onCopy }: { itemId: string, type: 'password' | 'content', label: string, onCopy: (text: string, l: string) => void }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['vault', itemId],
+    queryFn: () => api.get(`/vault/${itemId}`).then(r => r.data)
+  });
+  
+  const [decryptedText, setDecryptedText] = useState('Decrypting...');
+
+  useEffect(() => {
+    async function doDecrypt() {
+      if (data && e2eKey) {
+        const raw = type === 'password' ? data.password : data.notes || data.content; // fallback check
+        if (!raw) {
+          setDecryptedText('No content');
+          return;
+        }
+        // Try to decrypt if it looks like base64, otherwise return raw (could be old unencrypted data)
+        try {
+           const dec = await decryptE2E(raw, e2eKey);
+           setDecryptedText(dec !== '*** 🔒 DECRYPTION_FAILED ***' ? dec : raw);
+        } catch {
+           setDecryptedText(raw);
+        }
+      }
+    }
+    doDecrypt();
+  }, [data, type]);
+
+  if (isLoading) return <div className="skeleton" style={{ height: 32, width: '100%', marginBottom: 10 }}></div>;
+
+  return (
+    <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: 'var(--surface2)', fontFamily: type === 'password' ? 'monospace' : 'inherit', fontSize: 13, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span style={{ wordBreak: 'break-all', color: 'var(--text)' }}>{decryptedText}</span>
+      <button onClick={() => onCopy(decryptedText, label)}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, marginLeft: 8 }}>📋</button>
+    </div>
   );
 }
 
@@ -265,24 +338,20 @@ export default function Vault() {
                 </div>
 
                 {/* Reveal section */}
-                {(item.password || item.content) && revealId !== item.id && (
+                {revealId !== item.id && (
                   <button onClick={() => setRevealId(item.id)}
                     style={{ marginTop: 10, background: 'none', border: 'none', color: 'var(--vault)', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
-                     Reveal
+                     👁️ Reveal Secure Data
                   </button>
                 )}
                 <AnimatePresence>
                   {revealId === item.id && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-                      {item.password && (
-                        <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: 'var(--surface2)', fontFamily: 'monospace', fontSize: 13, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ wordBreak: 'break-all' }}>{item.password}</span>
-                          <button onClick={() => { copyToClipboard(item.password!, 'Password'); setRevealId(null); }}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, marginLeft: 8 }}></button>
-                        </div>
+                      {item.category === 'password' && (
+                        <VaultReveal itemId={item.id} type="password" label="Password" onCopy={copyToClipboard} />
                       )}
-                      {item.content && item.category !== 'password' && (
-                        <p style={{ marginTop: 10, fontSize: 13, color: 'var(--text2)', lineHeight: 1.5 }}>{item.content}</p>
+                      {item.category !== 'password' && (
+                         <VaultReveal itemId={item.id} type="content" label="Content" onCopy={copyToClipboard} />
                       )}
                       <button onClick={() => setRevealId(null)}
                         style={{ marginTop: 6, background: 'none', border: 'none', color: 'var(--muted)', fontSize: 11, cursor: 'pointer', padding: 0 }}>

@@ -8,7 +8,20 @@ import ConfirmModal from '../components/ConfirmModal';
 
 const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
 
+// Haptic feedback utility for micro-interactions
+const triggerHaptic = (type: 'light' | 'medium' | 'heavy' | 'success' = 'light') => {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    switch (type) {
+      case 'light': navigator.vibrate(20); break;
+      case 'medium': navigator.vibrate(40); break;
+      case 'heavy': navigator.vibrate(80); break;
+      case 'success': navigator.vibrate([30, 50, 40]); break; // Double burst
+    }
+  }
+};
+
 const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
+
   urgent:  { label: 'Urgent',  color: '#c4607a' },
   high:    { label: 'High',    color: '#d4864a' },
   medium:  { label: 'Medium',  color: '#e2b96a' },
@@ -65,7 +78,11 @@ export default function Life() {
 
   const completeMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/tasks/${id}/complete`).then((r) => r.data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks'] }); addToast('success', 'Task completed! '); },
+    onSuccess: () => { 
+      triggerHaptic('success');
+      qc.invalidateQueries({ queryKey: ['tasks'] }); 
+      addToast('success', 'Task completed! 🌟'); 
+    },
     onError:   () => addToast('error', 'Failed to complete'),
   });
 
@@ -115,10 +132,10 @@ export default function Life() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>Life</h1>
-          <p style={{ fontSize: 13, color: 'var(--muted)' }}>{pendingCount} pending  {completedCount} done</p>
+          <p style={{ fontSize: 13, color: 'var(--muted)' }}>{pendingCount} pending • {completedCount} done</p>
         </div>
-        <motion.button whileTap={{ scale: 0.92 }} className="fab" onClick={() => setShowForm(true)}
-          style={{ background: 'linear-gradient(135deg, var(--life), #60a4d4)' }}>+</motion.button>
+        <motion.button whileTap={{ scale: 0.92 }} className="fab" onClick={() => { triggerHaptic('medium'); setShowForm(true); }}
+          style={{ background: 'linear-gradient(135deg, var(--life), #60a4d4)', boxShadow: '0 4px 15px rgba(74,143,212,0.3)' }}>+</motion.button>
       </div>
 
       {/* Stats row */}
@@ -126,7 +143,7 @@ export default function Life() {
         {Object.entries(PRIORITY_MAP).map(([key, val]) => {
           const count = tasks.filter((t) => t.priority === key && t.status === 'pending').length;
           return (
-            <div key={key} className="card" style={{ flex: 1, padding: '8px 6px', textAlign: 'center' }}>
+            <div key={key} className="card glass glow-hover" style={{ flex: 1, padding: '8px 6px', textAlign: 'center' }}>
               <p style={{ fontSize: 18, fontWeight: 800, color: val.color }}>{count}</p>
               <p style={{ fontSize: 10, color: 'var(--muted)' }}>{val.label}</p>
             </div>
@@ -135,12 +152,12 @@ export default function Life() {
       </div>
 
       {/* AI Focus Tip */}
-      <div className="card" style={{ marginBottom: 16, background: 'rgba(74,143,212,0.08)', borderColor: 'rgba(74,143,212,0.2)' }}>
+      <div className="card glass" style={{ marginBottom: 16, background: 'rgba(74,143,212,0.05)', borderColor: 'rgba(74,143,212,0.2)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: aiTip ? 10 : 0 }}>
-          <p className="section-label"> AI FOCUS TIP</p>
-          <button onClick={getAiFocusTip} disabled={loadingTip}
+          <p className="section-label">✨ AI FOCUS TIP</p>
+          <button onClick={() => { triggerHaptic('medium'); getAiFocusTip(); }} disabled={loadingTip}
             style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(74,143,212,0.15)', border: '1px solid rgba(74,143,212,0.3)', color: 'var(--life)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-            {loadingTip ? 'Thinking' : aiTip ? ' Refresh' : ' Get Tip'}
+            {loadingTip ? 'Thinking...' : aiTip ? '🔄 Refresh' : '✨ Get Tip'}
           </button>
         </div>
         <AnimatePresence>
@@ -156,7 +173,7 @@ export default function Life() {
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {(['today','upcoming','all'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
+          <button key={t} onClick={() => { triggerHaptic('light'); setTab(t); }}
             className={`chip${tab === t ? ' active' : ''}`} style={{ flex: 1, justifyContent: 'center', textTransform: 'capitalize' }}>
             {t === 'today' ? 'Today' : t === 'upcoming' ? 'Upcoming' : 'All'}
           </button>
@@ -179,18 +196,26 @@ export default function Life() {
             {filtered.map((task, i) => (
               <motion.div key={task.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20, height: 0 }} transition={{ delay: i * 0.03 }}
-                className="card" style={{ opacity: task.status === 'completed' ? 0.6 : 1 }}>
+                className="card glass glow-hover" style={{ opacity: task.status === 'completed' ? 0.6 : 1, padding: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                   {/* Checkbox */}
                   <motion.button
                     whileTap={{ scale: 0.8 }}
-                    onClick={() => task.status === 'pending' && completeMutation.mutate(task.id)}
+                    onClick={() => {
+                      if (task.status === 'pending') {
+                        triggerHaptic('light'); // pre-emptive feel
+                        completeMutation.mutate(task.id);
+                      }
+                    }}
                     style={{
                       width: 24, height: 24, borderRadius: 12, border: `2px solid ${PRIORITY_MAP[task.priority ?? 'medium']?.color ?? 'var(--muted)'}`,
                       background: task.status === 'completed' ? PRIORITY_MAP[task.priority ?? 'medium']?.color : 'transparent',
                       cursor: 'pointer', flexShrink: 0, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'background 0.3s ease, border-color 0.3s ease'
                     }}>
-                    {task.status === 'completed' && <span style={{ color: '#fff', fontSize: 12 }}></span>}
+                    {task.status === 'completed' && (
+                      <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} style={{ color: '#fff', fontSize: 13, fontWeight: 'bold' }}>✓</motion.span>
+                    )}
                   </motion.button>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -229,7 +254,7 @@ export default function Life() {
         {showForm && (
           <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={(e) => e.target === e.currentTarget && setShowForm(false)}>
-            <motion.div className="modal-sheet" initial={{ y: 500 }} animate={{ y: 0 }} exit={{ y: 500 }}
+            <motion.div className="modal-sheet glass-modal" initial={{ y: 500 }} animate={{ y: 0 }} exit={{ y: 500 }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}>
               <div className="modal-handle" />
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>

@@ -91,6 +91,21 @@ def _row_to_response(row: dict, include_secrets: bool = False) -> VaultItemRespo
 
 
 @router.get(
+    "/{item_id}",
+    response_model=VaultItemResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get single vault item with secrets",
+)
+async def get_vault_item(
+    item_id: str,
+    current_user: TokenData = Depends(get_current_user),
+) -> VaultItemResponse:
+    row = await db_select_one(supabase_admin, _TABLE, {"id": item_id, "user_id": current_user.user_id})
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+    return _row_to_response(row, include_secrets=True)
+
+@router.get(
     "",
     response_model=list[VaultItemResponse],
     status_code=status.HTTP_200_OK,

@@ -148,6 +148,55 @@ RECOMMENDATIONS:
         )
 
         raw = response.content[0].text if response.content else ""
+        return {"raw": raw}
+
+    async def generate_daily_proactive_insight(
+        self,
+        user_id: str,
+        tasks: list[dict[str, Any]],
+        sleep_data: dict[str, Any] | None = None,
+        nutrition_data: dict[str, Any] | None = None,
+    ) -> str:
+        """Generates a high-value, proactive morning insight using holistic data.
+        If the user slept poorly but has urgent tasks, it advises them contextually.
+        """
+        tasks_pending = [t for t in tasks if t.get("status") == "pending" or t.get("status") == "in_progress"]
+        tasks_text = "\n".join(f"- {t.get('title')} (Priority: {t.get('priority')})" for t in tasks_pending[:5])
+
+        sleep_text = ""
+        if sleep_data and "hours" in sleep_data:
+            sleep_text = f"User slept for {sleep_data['hours']} hours last night. Quality: {sleep_data.get('quality', 'unknown')}."
+
+        nutrition_text = ""
+        if nutrition_data:
+            cals = nutrition_data.get("calories", 0)
+            target = nutrition_data.get("target_calories", 2000)
+            nutrition_text = f"Yesterday's calories: {cals}/{target}."
+
+        prompt = f"""Generate a highly personalized, proactive 'Morning Briefing' for the user (2-3 short, punchy paragraphs).
+
+CONTEXT:
+TASKS DUE TODAY OR PENDING:
+{tasks_text or "No pending tasks."}
+
+HEALTH & SLEEP:
+{sleep_text or "No sleep data logged."}
+{nutrition_text or "No nutrition data logged."}
+
+INSTRUCTIONS:
+- Act entirely proactively. Do not say "Here is your briefing". Speak directly to the user.
+- If they slept poorly (< 6 hours) but have 'urgent' tasks, advise pacing/caffeine and prioritizing the hardest task.
+- If they are doing great, encourage momentum.
+- Maintain the premium, 'Life OS' super-assistant tone. Warm but highly strategic.
+"""
+
+        response = self._client.messages.create(
+            model=self._model,
+            max_tokens=350,
+            system=_LUMINA_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.content[0].text if response.content else "Good morning. Ready to tackle the day?"
         tokens_used = response.usage.input_tokens + response.usage.output_tokens
 
         # Parse structured sections
@@ -301,6 +350,7 @@ Acknowledge their past hopes and encourage their growth. 3-4 paragraphs."""
         mood_history: list[dict[str, Any]],
         tasks_today: list[dict[str, Any]],
         last_journal_snippet: str | None = None,
+        sleep_data: dict[str, Any] | None = None,
     ) -> str:
         """Generate a warm, personalised daily greeting based on user context.
 
@@ -309,6 +359,7 @@ Acknowledge their past hopes and encourage their growth. 3-4 paragraphs."""
             mood_history: Recent mood entries (last 7 days).
             tasks_today: Tasks due or active today.
             last_journal_snippet: Opening text of the last journal entry.
+            sleep_data: Sleep metrics from the previous night.
 
         Returns:
             A 1-2 sentence personalised greeting string.
@@ -328,6 +379,15 @@ Acknowledge their past hopes and encourage their growth. 3-4 paragraphs."""
             context_parts.append(f"Average mood this week: {recent_mood_avg:.1f}/10")
         if task_count:
             context_parts.append(f"Pending tasks today: {task_count}")
+            # Identify highest priority
+            urgent_tasks = [t for t in tasks_today if t.get("priority") == "urgent" and not t.get("is_completed")]
+            if urgent_tasks:
+                urgent_titles = ", ".join(t.get("title", "") for t in urgent_tasks)
+                context_parts.append(f"Urgent tasks: {urgent_titles}")
+        
+        if sleep_data and "hours" in sleep_data:
+            context_parts.append(f"Last night's sleep: {sleep_data['hours']} hours, feeling: {sleep_data.get('quality', 'unknown')}")
+
         if last_journal_snippet:
             context_parts.append(f"Last journal opening: \"{last_journal_snippet[:120]}\"")
 
@@ -335,9 +395,11 @@ Acknowledge their past hopes and encourage their growth. 3-4 paragraphs."""
 
         prompt = f"""{context}
 
-Write a single, warm, highly personalised greeting for {user_name} for this {time_of_day}.
-Reference something specific from their context — don't be generic.
-Maximum 2 sentences. No emojis unless they feel genuinely natural. Do not start with "Good {time_of_day}"."""
+You are Lumina, a highly intelligent and proactive Life OS AI.
+Provide an insightful, proactive {time_of_day} briefing for {user_name}. 
+If they slept poorly (<6 hours) but have urgent tasks, recommend pacing themselves.
+If they are doing well, encourage momentum.
+Be direct, personalized, and strategic. Maximum 3 sentences. No generic intros like "Good {time_of_day}!"."""
 
         response = self._client.messages.create(
             model=self._model,

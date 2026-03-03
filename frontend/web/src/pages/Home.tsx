@@ -118,32 +118,35 @@ export default function Home() {
         </div>
       </div>
 
-      {/*  AI Greeting  */}
+      {/*  AI Greeting / Briefing  */}
       <div
-        className="card"
+        className="card glass glow-hover"
         style={{
           background: 'linear-gradient(135deg, rgba(123,111,218,0.12), rgba(61,170,134,0.12))',
           borderColor: 'rgba(123,111,218,0.25)',
           marginBottom: 20,
           position: 'relative',
           overflow: 'hidden',
+          padding: 20,
         }}
       >
-        <div style={{ position: 'absolute', top: -20, right: -20, fontSize: 80, opacity: 0.06 }}></div>
-        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--mind)', letterSpacing: '0.1em', marginBottom: 8 }}>
-           LUMINA AI
+        <div style={{ position: 'absolute', top: -20, right: -20, fontSize: 80, opacity: 0.06 }}>✨</div>
+        <p style={{ fontSize: 10, fontWeight: 800, color: 'var(--mind)', letterSpacing: '0.12em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+           <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: 3, background: 'var(--mind)', boxShadow: '0 0 8px var(--mind)' }} />
+           AI BRIEFING
         </p>
         {greetLoading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <Skel h={14} w="90%" />
+            <Skel h={14} w="85%" />
             <Skel h={14} w="65%" />
           </div>
         ) : (
           <motion.p
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
-            style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--text2)' }}
+            style={{ fontSize: 14, lineHeight: 1.65, color: 'var(--text)', fontWeight: 500 }}
           >
-            {greetData?.greeting ?? 'Welcome back. Your journey continues.'}
+            {greetData?.greeting ?? 'Welcome back to Lumina. Your journey continues.'}
           </motion.p>
         )}
         {avgMood > 0 && (

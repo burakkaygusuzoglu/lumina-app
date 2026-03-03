@@ -86,6 +86,52 @@ async def chat(
     )
 
 
+class DailyBriefingResponse(BaseModel):
+    briefing: str
+
+@router.get(
+    "/insight/daily",
+    response_model=DailyBriefingResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Generate proactive daily briefing",
+)
+async def generate_daily_briefing(
+    current_user: TokenData = Depends(get_current_user),
+) -> DailyBriefingResponse:
+    """Trigger the AI to generate a highly proactive morning briefing."""
+    from datetime import timedelta
+    now = datetime.now(timezone.utc)
+    day_start = now - timedelta(hours=24)
+
+    try:
+        tasks = await db_select(
+            supabase_admin,
+            "tasks",
+            filters={"user_id": current_user.user_id},
+            order_by="created_at desc",
+            limit=20,
+        )
+    except Exception:
+        tasks = []
+        
+    try:
+        sleep_rows = await db_select(
+            supabase_admin, "sleep_entries", {"user_id": current_user.user_id}, "created_at desc", 1
+        )
+        sleep_data = sleep_rows[0] if sleep_rows else None
+    except Exception:
+        sleep_data = None
+
+    briefing = await _ai.generate_daily_proactive_insight(
+        user_id=current_user.user_id,
+        tasks=tasks,
+        sleep_data=sleep_data,
+        nutrition_data=None 
+    )
+
+    return DailyBriefingResponse(briefing=briefing)
+
+
 @router.post(
     "/insight/weekly",
     response_model=WeeklyReport,
@@ -279,6 +325,16 @@ async def get_daily_greeting(
     )
     snippet = journals[0].get("content", "")[:120] if journals else None
 
+    try:
+        sleep_rows = await db_select(
+            supabase_admin, "sleep_entries",
+            filters={"user_id": current_user.user_id},
+            order_by="date desc", limit=1,
+        )
+        sleep_data = sleep_rows[0] if sleep_rows else None
+    except Exception:
+        sleep_data = None
+
     first_name = "friend"
     try:
         user_resp = supabase_admin.auth.admin.get_user_by_id(current_user.user_id)
@@ -293,6 +349,7 @@ async def get_daily_greeting(
         mood_history=mood_dicts,
         tasks_today=tasks_today,
         last_journal_snippet=snippet,
+        sleep_data=sleep_data,
     )
 
     # Cache the greeting
