@@ -233,7 +233,7 @@ export default function Wellness() {
                 <YAxis domain={[0, 10]} tick={{ fontSize: 9, fill: "var(--muted)" }} tickLine={false} axisLine={false} />
                 <Tooltip
                   contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12 }}
-                  formatter={(v: number, n: string) => [v, n === "mood" ? "Mood" : "Energy"]}
+                  formatter={(v: number | undefined, n: string) => [v ?? 0, n === "mood" ? "Mood" : "Energy"]}
                 />
                 <Area type="monotone" dataKey="mood"   stroke="var(--wellness)"  strokeWidth={2} fill="url(#moodGrad)"   dot={false} />
                 <Area type="monotone" dataKey="energy" stroke="var(--life)"      strokeWidth={1.5} fill="none"            dot={false} strokeDasharray="4 2" />
@@ -255,7 +255,7 @@ export default function Wellness() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="day" tick={{ fontSize: 9, fill: "var(--muted)" }} tickLine={false} axisLine={false} />
                 <YAxis domain={[0, 12]} tick={{ fontSize: 9, fill: "var(--muted)" }} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12 }} formatter={(v: number) => [`${v}h`, "Hours"]} />
+                <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12 }} formatter={(v: number | undefined) => [`${v ?? 0}h`, "Hours"]} />
                 <Bar dataKey="hours" fill="var(--life)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

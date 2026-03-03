@@ -31,6 +31,7 @@ export interface MoodEntry {
   energy_level: number; // 1–10
   note?: string;
   recorded_at: string;
+  created_at: string;
 }
 
 export interface SleepEntry {
