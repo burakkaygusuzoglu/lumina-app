@@ -39,6 +39,7 @@ export interface SleepEntry {
   hours_slept: number;
   quality: number; // 1–5
   recorded_at: string;
+  created_at: string;
 }
 
 export interface VaultItem {
