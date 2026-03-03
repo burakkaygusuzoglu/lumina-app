@@ -161,24 +161,42 @@ export default function Home() {
       </div>
 
       {/*  Quick mood check-in  */}
-      <div className="card" style={{ marginBottom: 20 }}>
-        <p className="section-label" style={{ marginBottom: 14 }}>
-          {moodSaved ? ' MOOD LOGGED' : 'HOW ARE YOU NOW?'}
+      <div className="card glass glow-hover" style={{ marginBottom: 20, position: 'relative', overflow: 'hidden' }}>
+        <p className="section-label" style={{ marginBottom: 14, color: moodSaved ? 'var(--mind)' : 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          {moodSaved ? (
+            <>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              MOOD LOGGED
+            </>
+          ) : 'HOW ARE YOU NOW?'}
         </p>
+
+        {moodSaved && (
+           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} style={{ position: 'absolute', right: 20, top: 16, color: 'var(--mind)', fontSize: 24, filter: 'blur(2px)' }}>
+             ✨
+           </motion.div>
+        )}
+
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           {QUICK_MOODS.map((m) => (
             <motion.button
               key={m.score}
               whileTap={{ scale: 0.85 }}
-              onClick={() => !moodSaved && moodMutation.mutate(m.score)}
+              whileHover={{ y: -4 }}
+              onClick={() => {
+                if(!moodSaved) {
+                  if (navigator.vibrate) navigator.vibrate(40);
+                  moodMutation.mutate(m.score);
+                }
+              }}
               style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                padding: '8px 4px', borderRadius: 12, background: 'none', border: 'none',
-                cursor: moodSaved ? 'default' : 'pointer', opacity: moodSaved ? 0.6 : 1,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                padding: '10px 8px', borderRadius: 16, background: moodSaved ? 'transparent' : 'rgba(255,255,255,0.03)', border: '1px solid', borderColor: moodSaved ? 'transparent' : 'var(--border)',
+                cursor: moodSaved ? 'default' : 'pointer', opacity: moodSaved ? 0.4 : 1, transition: 'all 0.3s'
               }}
             >
-              <span style={{ fontSize: 28 }}>{m.emoji}</span>
-              <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600 }}>{m.label}</span>
+              <span style={{ fontSize: 32, filter: moodSaved ? 'grayscale(100%)' : 'drop-shadow(0 4px 6px rgba(0,0,0,0.4))' }}>{m.emoji}</span>
+              <span style={{ fontSize: 11, color: moodSaved ? 'var(--muted)' : 'var(--text2)', fontWeight: 600 }}>{m.label}</span>
             </motion.button>
           ))}
         </div>

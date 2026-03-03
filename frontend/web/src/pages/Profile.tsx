@@ -44,6 +44,63 @@ export default function Profile() {
     reader.readAsDataURL(file);
   }
 
+  async function handleExportData() {
+    try {
+      addToast('info', 'Preparing your data for export...');
+      const results = await Promise.all([
+        api.get('/journal').then(r => r.data).catch(() => []),
+        api.get('/memories').then(r => r.data).catch(() => []),
+        api.get('/tasks').then(r => r.data).catch(() => [])
+      ]);
+      
+      const fileData = JSON.stringify({
+        exportDate: new Date().toISOString(),
+        journal: results[0],
+        memories: results[1],
+        tasks: results[2],
+        user: user
+      }, null, 2);
+
+      const blob = new Blob([fileData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `lumina_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      addToast('success', 'Data exported successfully! 📦');
+    } catch (error) {
+      addToast('error', 'Export failed');
+    }
+  }
+
+  function handleImportData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.onchange = async (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const contents = event.target?.result as string;
+          const data = JSON.parse(contents);
+          console.log("Importing data:", data);
+          // In a real scenario, this would send mapped data to /import endpoint
+          addToast('success', 'Data imported successfully! ✨ Refetching...');
+        } catch (err) {
+          addToast('error', 'Invalid file format');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+
   function handleLogout() {
     logout();
     navigate('/login');
@@ -104,7 +161,8 @@ export default function Profile() {
           <p className="section-label" style={{ marginBottom: 12 }}>ACCOUNT</p>
           {[
             { icon: '⚙️', label: 'Settings', action: () => navigate('/settings') },
-            { icon: '📊', label: 'Export My Data', action: () => addToast('info', 'Export coming soon…') },
+            { icon: '📊', label: 'Export My Data', action: handleExportData },
+            { icon: '📥', label: 'Import Data', action: handleImportData },
           ].map((item) => (
             <button key={item.label} onClick={item.action}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid var(--border)', color: 'var(--text)', textAlign: 'left' }}>

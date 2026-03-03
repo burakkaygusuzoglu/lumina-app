@@ -63,28 +63,54 @@ function MasterPassGate({ onUnlock }: { onUnlock: () => void }) {
 
   return (
     <motion.div {...PAGE} className="page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100dvh - var(--nav-h) - 32px)', textAlign: 'center' }}>
-      <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }} className="glass" style={{ padding: 40, borderRadius: 24 }}>
-        <div style={{ fontSize: 64, marginBottom: 16 }}>🛡️</div>
-        <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic', marginBottom: 8 }}>Zero-Knowledge Vault</h2>
-        <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 24, maxWidth: 280, lineHeight: 1.5 }}>
-          {storedHash 
-            ? 'Enter your master password. Decryption happens locally.' 
-            : 'Set a master password. Your data will be encrypted End-to-End before it leaves your device.'}
-        </p>
-        <input
-          type="password"
-          className="field"
-          placeholder={storedHash ? 'Master password' : 'Create master password'}
-          value={pass}
-          onChange={(e) => { setPass(e.target.value); setError(''); }}
-          onKeyDown={(e) => e.key === 'Enter' && attempt()}
-          style={{ textAlign: 'center', letterSpacing: 4, marginBottom: 8, maxWidth: 280 }}
-          autoFocus
-        />
-        {error && <p style={{ fontSize: 12, color: 'var(--journal)', marginBottom: 8 }}>{error}</p>}
-        <button className="btn-primary glow-hover" onClick={attempt} disabled={loading} style={{ maxWidth: 280, background: 'linear-gradient(135deg, var(--vault), #e8a06a)' }}>
-          {loading ? 'Deriving Key...' : storedHash ? 'Decrypt & Unlock' : 'Setup Zero-Knowledge Vault'}
-        </button>
+      <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }} className="glass" style={{ padding: '40px 24px', borderRadius: 24, position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: -50, left: '50%', transform: 'translateX(-50%)', width: 200, height: 200, background: 'var(--vault)', filter: 'blur(80px)', opacity: 0.15, zIndex: 0 }} />
+        
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 80, height: 80, borderRadius: 40, background: 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(245,158,11,0.05))', border: '1px solid rgba(245,158,11,0.3)', marginBottom: 20 }}>
+            <span style={{ fontSize: 36 }}>🛡️</span>
+          </div>
+          
+          <h2 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic', marginBottom: 12, color: '#f8fafc' }}>
+            Zero-Knowledge Vault
+          </h2>
+          
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+            <span className="badge" style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', fontSize: 12 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              Military-Grade AES-256 E2E Encryption
+            </span>
+          </div>
+          
+          <p style={{ fontSize: 14, color: 'var(--text2)', marginBottom: 30, maxWidth: 300, lineHeight: 1.6, marginInline: 'auto' }}>
+            {storedHash 
+              ? 'Enter your master password. Keys are derived locally; we can never see your data.' 
+              : 'Set a master password. Your secrets are encrypted instantly before leaving your device.'}
+          </p>
+          
+          <input
+            type="password"
+            className="field"
+            placeholder={storedHash ? 'Enter Master Password' : 'Create Master Password'}
+            value={pass}
+            onChange={(e) => { setPass(e.target.value); setError(''); }}
+            onKeyDown={(e) => e.key === 'Enter' && attempt()}
+            style={{ textAlign: 'center', letterSpacing: 4, marginBottom: 12, maxWidth: 280, fontSize: 16, padding: '16px', background: 'rgba(0,0,0,0.2)' }}
+            autoFocus
+          />
+          
+          <AnimatePresence>
+            {error && (
+              <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ fontSize: 13, color: 'var(--journal)', marginBottom: 12, fontWeight: 600 }}>
+                {error}
+              </motion.p>
+            )}
+          </AnimatePresence>
+          
+          <button className="btn-primary glow-hover" onClick={attempt} disabled={loading} style={{ maxWidth: 280, background: 'linear-gradient(135deg, var(--vault), #d97706)', padding: '16px', fontSize: 16, boxShadow: '0 8px 25px rgba(245,158,11,0.25)' }}>
+            {loading ? 'Decrypting Secure Key...' : storedHash ? 'Unlock Vault' : 'Initialize Vault'}
+          </button>
+        </div>
       </motion.div>
     </motion.div>
   );

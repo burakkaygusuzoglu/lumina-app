@@ -4,22 +4,23 @@
  */
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Home, Brain, Activity, Target, BookOpen, User } from 'lucide-react';
 import Toast from './Toast';
 import AIAssistant from './AIAssistant';
 
 interface NavTab {
   path:  string;
-  icon:  string;
+  icon:  React.ReactNode;
   label: string;
 }
 
 const TABS: NavTab[] = [
-  { path: '/',        icon: '',  label: 'Home'    },
-  { path: '/mind',    icon: '',  label: 'Mind'    },
-  { path: '/wellness',icon: '',  label: 'Health'  },
-  { path: '/life',    icon: '',  label: 'Life'    },
-  { path: '/journal', icon: '',  label: 'Journal' },
-  { path: '/profile', icon: '',  label: 'Profile' },
+  { path: '/',        icon: <Home size={22} />,     label: 'Home'    },
+  { path: '/mind',    icon: <Brain size={22} />,    label: 'Mind'    },
+  { path: '/wellness',icon: <Activity size={22} />, label: 'Health'  },
+  { path: '/life',    icon: <Target size={22} />,   label: 'Life'    },
+  { path: '/journal', icon: <BookOpen size={22} />, label: 'Journal' },
+  { path: '/profile', icon: <User size={22} />,     label: 'Profile' },
 ];
 
 export default function Layout() {

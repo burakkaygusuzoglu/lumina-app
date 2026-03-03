@@ -75,9 +75,8 @@ export default function Journal() {
   });
 
   const capsuleMutation = useMutation({
-    mutationFn: () => api.post('/journal/time-capsule', { content: capsuleContent, open_at: capsuleDate }).then((r) => r.data),
-    onSuccess: () => { addToast('success', 'Time capsule sealed! '); setCapsuleContent(''); setCapsuleDate(''); setShowTimeCapsule(false); },
-    onError: () => addToast('error', 'Failed to seal capsule'),
+      mutationFn: () => api.post('/journal/timecapsule', { letter: capsuleContent, open_at: capsuleDate }).then((r) => r.data),
+      onSuccess: () => { addToast('success', 'Time capsule sealed! ⏳'); setCapsuleContent(''); setCapsuleDate(''); setShowTimeCapsule(false); },
   });
 
   function addTag() {
@@ -151,12 +150,18 @@ export default function Journal() {
         className="card card-hover"
         style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, textAlign: 'left', cursor: 'pointer', background: 'rgba(226,185,106,0.08)', borderColor: 'rgba(226,185,106,0.2)' }}
       >
-        <span style={{ fontSize: 28 }}></span>
-        <div>
-          <p style={{ fontWeight: 700, fontSize: 14 }}>Seal a Time Capsule</p>
-          <p style={{ fontSize: 12, color: 'var(--muted)' }}>Write a letter to your future self</p>
+        <span style={{ fontSize: 28 }}>🕰️</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <p style={{ fontWeight: 800, fontSize: 15, color: '#f8fafc' }}>Seal a Time Capsule</p>
+            <span className="badge" style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              E2E Secure
+            </span>
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2 }}>Write a deeply personal letter to your future self.</p>
         </div>
-        <span style={{ marginLeft: 'auto', color: 'var(--muted)' }}></span>
+        <span style={{ marginLeft: 'auto', color: 'var(--muted)' }}>→</span>
       </button>
 
       {/* Journal entries */}

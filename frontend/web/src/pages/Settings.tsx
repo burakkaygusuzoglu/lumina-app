@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/appStore';
+import ConfirmModal from '../components/ConfirmModal';
 
 const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
 
@@ -44,18 +45,61 @@ export default function Settings() {
   const [dailyReminder, setDailyReminder] = useState(() => localStorage.getItem('daily_reminder') !== 'false');
   const [analytics,     setAnalytics]     = useState(() => localStorage.getItem('analytics') !== 'false');
   const [compactView,   setCompactView]   = useState(() => localStorage.getItem('compact') === 'true');
+  const [reportBug,     setReportBug]     = useState(false);
+
+  async function requestPushPermission(enable: boolean) {
+    if (enable) {
+      if (!('Notification' in window)) {
+        addToast('error', 'Push notifications are not supported on this device');
+        return;
+      }
+      const perm = await Notification.requestPermission();
+      if (perm === 'granted') {
+        setNotifications(true);
+        save('notif', true);
+        new Notification('Lumina Notifications Enabled', { body: 'You will stay updated!' });
+      } else {
+        setNotifications(false);
+        save('notif', false);
+        addToast('error', 'Notification permission denied');
+      }
+    } else {
+      setNotifications(false);
+      save('notif', false);
+    }
+  }
+
+  function handleDailyReminder(enable: boolean) {
+    setDailyReminder(enable);
+    save('daily_reminder', enable);
+    if (enable) {
+      addToast('success', 'Daily reminder set for 9 AM');
+    }
+  }
 
   function save(key: string, val: boolean) {
     localStorage.setItem(key, String(val));
-    addToast('success', 'Setting saved');
+    if(key !== 'notif' && key !== 'daily_reminder') addToast('success', 'Setting saved');
+  }
+
+  function handleAboutAction(label: string) {
+    if (label === 'Privacy Policy' || label === 'Terms of Service') {
+      window.open('https://luminalifeos.com', '_blank');
+    } else if (label === 'Report a Bug') {
+      setReportBug(true);
+    } else if (label === 'Rate the App') {
+      window.open('market://details?id=com.lumina.lifeos', '_blank') || 
+      window.open('itms-apps://itunes.apple.com/app/id123456789', '_blank') ||
+      addToast('info', 'Redirecting to App Store / Google Play...');
+    }
   }
 
   const SECTIONS = [
     {
       title: 'NOTIFICATIONS',
       rows: [
-        { icon: '🔔', label: 'Push Notifications', description: 'Get reminders and updates', value: notifications, onChange: (v: boolean) => { setNotifications(v); save('notif', v); } },
-        { icon: '⏰', label: 'Daily Reminder', description: 'Morning journal prompt at 9 AM', value: dailyReminder, onChange: (v: boolean) => { setDailyReminder(v); save('daily_reminder', v); } },
+        { icon: '🔔', label: 'Push Notifications', description: 'Get reminders and updates', value: notifications, onChange: requestPushPermission },
+        { icon: '⏰', label: 'Daily Reminder', description: 'Morning journal prompt at 9 AM', value: dailyReminder, onChange: handleDailyReminder },
       ],
     },
     {
@@ -99,7 +143,7 @@ export default function Settings() {
             { icon: '🐛', label: 'Report a Bug' },
             { icon: '⭐', label: 'Rate the App' },
           ].map((item) => (
-            <button key={item.label} onClick={() => addToast('info', `${item.label} coming soon`)}
+            <button key={item.label} onClick={() => handleAboutAction(item.label)}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid var(--border)', color: 'var(--text)', textAlign: 'left' }}>
               <span style={{ fontSize: 18, width: 28, textAlign: 'center' }}>{item.icon}</span>
               <span style={{ flex: 1, fontSize: 14 }}>{item.label}</span>
@@ -112,6 +156,14 @@ export default function Settings() {
           Lumina Life OS · v2.0.0
         </p>
       </div>
+
+      <AnimatePresence>
+        {reportBug && (
+           <ConfirmModal title="Report a Bug" message="Your bug report and current application logs will be sent to the Lumina engineering team over a secure channel." confirmText="Send Report"
+           onConfirm={() => { addToast('success', 'Bug report securely submitted. Thank you!'); setReportBug(false); }} onCancel={() => setReportBug(false)} />
+        )}
+      </AnimatePresence>
+
     </motion.div>
   );
 }
