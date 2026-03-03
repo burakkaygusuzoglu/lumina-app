@@ -72,6 +72,7 @@ class Settings(BaseSettings):
             "exp://localhost:8081",
             "https://lumina-app.vercel.app",
             "https://lumina-life.vercel.app",
+            "https://lumina-app-pink.vercel.app",
         ],
         description="CORS allowed origins — extend via ALLOWED_ORIGINS env var in production",
     )
