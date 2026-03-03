@@ -12,7 +12,9 @@ Run with:
 
 from __future__ import annotations
 
+import json
 import logging
+import os
 import time
 
 from dotenv import load_dotenv
@@ -81,7 +83,17 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # â”€â”€ Middleware stack (outermost first) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # 1. CORS  (must be before security headers so preflight OPTIONS works)
-_cors_origins = ["*"] if settings.debug else settings.allowed_origins
+# Read ALLOWED_ORIGINS directly from env so comma-separated or JSON-array
+# strings both work regardless of pydantic-settings list-parsing behaviour.
+def _build_cors_origins() -> list[str]:
+    raw = os.environ.get("ALLOWED_ORIGINS", "").strip()
+    if raw.startswith("["):
+        return json.loads(raw)
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    return settings.allowed_origins
+
+_cors_origins = ["*"] if settings.debug else _build_cors_origins()
 
 app.add_middleware(
     CORSMiddleware,
