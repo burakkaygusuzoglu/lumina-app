@@ -92,6 +92,64 @@ class TestUnauthenticatedRejection:
         )
 
 
+# ── Vault & Encryption Tests ──────────────────────────────────────────────────
+
+class TestEncryptionService:
+    """Verifies AES-256-GCM encryption logic within the service."""
+    
+    def test_encrypt_decrypt_lifecycle(self) -> None:
+        """A plain string should be encrypted and decrypted perfectly."""
+        from app.services.encryption_service import EncryptionService
+        svc = EncryptionService()
+        plaintext = "secret_lumina_password_123!"
+        encrypted = svc.encrypt(plaintext)
+        
+        # Ciphertext format: salt(16) + iv(12) + ciphertext + tag
+        assert encrypted != plaintext
+        assert len(encrypted) > len(plaintext)
+        
+        decrypted = svc.decrypt(encrypted)
+        assert decrypted == plaintext
+
+    def test_tampering_raises_error(self) -> None:
+        """If the encrypted blob is altered, GCM tag should reject it."""
+        from fastapi import HTTPException
+        from app.services.encryption_service import EncryptionService
+        import base64
+        
+        svc = EncryptionService()
+        encryptedBase64 = svc.encrypt("my_secret")
+        
+        # Decode, alter 1 byte of the ciphertext/tag, encode back
+        blob = bytearray(base64.urlsafe_b64decode(encryptedBase64 + "==="))
+        blob[-1] = blob[-1] ^ 0xFF  # Flip bits in the GCM tag
+        tamperedBase64 = base64.urlsafe_b64encode(blob).decode("ascii")
+        
+        with pytest.raises(HTTPException) as exc:
+            svc.decrypt(tamperedBase64)
+        assert exc.value.status_code == 400
+        assert "corrupt" in exc.value.detail.lower()
+
+    def test_encrypt_dict(self) -> None:
+        """Ensure dictionary encryption serializes non-strings correctly."""
+        from app.services.encryption_service import EncryptionService
+        import json
+        svc = EncryptionService()
+        
+        data = {
+            "password": "pass",
+            "metadata": {"cvv": 123},
+            "empty": None
+        }
+        
+        encrypted_dict = svc.encrypt_dict(data)
+        assert "password" in encrypted_dict
+        assert "metadata" in encrypted_dict
+        assert "empty" not in encrypted_dict
+        
+        assert svc.decrypt(encrypted_dict["password"]) == "pass"
+        assert json.loads(svc.decrypt(encrypted_dict["metadata"])) == {"cvv": 123}
+
 # ── JWT Tampering ─────────────────────────────────────────────────────────────
 
 class TestJWTTampering:

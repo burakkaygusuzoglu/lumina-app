@@ -7,15 +7,15 @@
 const SALT_KEY = 'lumina-e2e-salt';
 
 // Generate a random salt for the user or get from local
-function getSalt(): Uint8Array {
+function getSalt(): Uint8Array<ArrayBuffer> {
   let salt = localStorage.getItem(SALT_KEY);
   if (!salt) {
     const randomSalt = crypto.getRandomValues(new Uint8Array(16));
-    salt = btoa(String.fromCharCode(...randomSalt));
+    salt = btoa(String.fromCharCode(...Array.from(randomSalt)));
     localStorage.setItem(SALT_KEY, salt);
   }
   const binaryString = atob(salt);
-  const bytes = new Uint8Array(binaryString.length);
+  const bytes = new Uint8Array(new ArrayBuffer(binaryString.length)); // Ensure pure ArrayBuffer
   for (let i = 0; i < binaryString.length; i++) {
     bytes[i] = binaryString.charCodeAt(i);
   }
@@ -36,7 +36,7 @@ export async function deriveKey(password: string): Promise<CryptoKey> {
   return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: getSalt(),
+      salt: new Uint8Array(getSalt().buffer), // Strict typings buffer cast for Vercel/TS
       iterations: 100000,
       hash: 'SHA-256',
     },
