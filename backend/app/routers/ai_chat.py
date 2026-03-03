@@ -28,6 +28,7 @@ from app.models.user import TokenData
 from app.services.ai_service import AIService
 from app.services.memory_service import MemoryService
 from app.services.wellness_service import WellnessService
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ai", tags=["AI Core"])
@@ -393,3 +394,85 @@ async def get_insight_history(
         )
         for r in rows
     ]
+
+
+# ── AI Food Analysis ──────────────────────────────────────────────────────────
+
+class FoodAnalysisPayload(BaseModel):
+    image_base64: str
+    meal_type: str = "snack"
+
+
+@router.post(
+    "/analyze-food",
+    status_code=status.HTTP_200_OK,
+    summary="Analyze food image with AI (nutrition facts)",
+)
+async def analyze_food(
+    payload: FoodAnalysisPayload,
+    current_user: TokenData = Depends(get_current_user),
+) -> dict:
+    """Use Claude Vision to identify food and estimate nutritional values.
+
+    Args:
+        payload: Base64-encoded image and meal type.
+        current_user: Injected from JWT.
+
+    Returns:
+        Dict with food_name, calories, protein, carbs, fat, tips.
+    """
+    import anthropic as _anthropic
+
+    try:
+        client = _ai._client
+        response = client.messages.create(
+            model=_ai._model,
+            max_tokens=512,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/jpeg",
+                                "data": payload.image_base64,
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": (
+                                "Analyze this food image and respond with ONLY valid JSON "
+                                "(no markdown, no explanation) in this exact format:\n"
+                                '{"food_name":"...","calories":0,"protein":0,"carbs":0,"fat":0,'
+                                '"fiber":0,"serving_size":"...","health_score":8,'
+                                '"tips":"brief 1-sentence health tip"}\n'
+                                "Estimate values for a standard single serving."
+                            ),
+                        },
+                    ],
+                }
+            ],
+        )
+        raw = response.content[0].text.strip() if response.content else "{}"
+        # Strip markdown code fences if present
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        import json as _json
+        result = _json.loads(raw)
+        result["meal_type"] = payload.meal_type
+        return result
+    except Exception as exc:
+        logger.error("analyze_food failed: %s", exc)
+        return {
+            "food_name": "Unknown Food",
+            "calories": 0,
+            "protein": 0,
+            "carbs": 0,
+            "fat": 0,
+            "meal_type": payload.meal_type,
+            "tips": "Could not analyze the image. Please try again.",
+        }

@@ -35,6 +35,7 @@ from app.middleware.security import RequestLoggingMiddleware, SecurityHeadersMid
 from app.routers import (  # noqa: E402
     ai_chat_router,
     auth_router,
+    health_router,
     journal_router,
     memories_router,
     tasks_router,
@@ -121,6 +122,7 @@ app.include_router(tasks_router)
 app.include_router(vault_router)
 app.include_router(journal_router)
 app.include_router(ai_chat_router)
+app.include_router(health_router)
 
 # â”€â”€ Custom docs (unpkg CDN â€” avoids jsdelivr blocking) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 

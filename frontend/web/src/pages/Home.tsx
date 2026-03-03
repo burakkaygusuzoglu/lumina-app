@@ -1,404 +1,328 @@
-/**
- * Home  Lumina Life OS dashboard.
- *
- * Sections (top to bottom):
- *  1. AI Greeting    personalised, cached 1 h from /ai/greeting
- *  2. Mood check-in  5 emoji quick-tap
- *  3. Module grid    5 tiles with live stats
- *  4. Today's tasks  top 3 pending, checkable inline
- *  5. Weekly mood    7-bar mini chart
- *  6. On This Day    AI reflection on past memories
- *  7. Recent notes   horizontal scroll of last 6 memories
- */
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
-import ModuleCard from '../components/ModuleCard';
+import { useAppStore } from '../store/appStore';
 import type { Task, Memory, MoodEntry } from '../store/appStore';
 
-interface GreetingData { greeting: string; cached: boolean }
-interface OnThisDayData { memories: Memory[]; insight: string; has_memories: boolean }
-interface VaultStats    { count: number }
-interface JournalEntry  { id: string; content: string; created_at: string }
+const PAGE_ANIM = { initial: { opacity: 0, y: 18 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35 } };
 
-const PAGE = { initial: { opacity: 0, y: 18 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -10 } };
-
-const QUICK_MOODS = [
-  { score: 2,  emoji: '', label: 'Rough'  },
-  { score: 4,  emoji: '', label: 'Low'    },
-  { score: 6,  emoji: '', label: 'OK'     },
-  { score: 8,  emoji: '', label: 'Good'   },
-  { score: 10, emoji: '', label: 'Lit'    },
+const MODULES = [
+  { path: '/mind',    label: 'Mind',    sub: 'Memories & Ideas',  img: 'https://images.unsplash.com/photo-1456324504439-367cee3b3c32?w=800&q=80',  color: 'var(--mind)'    },
+  { path: '/wellness',label: 'Wellness',sub: 'Mood & Sleep',       img: 'https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=800&q=80',  color: 'var(--wellness)'},
+  { path: '/vault',   label: 'Vault',   sub: 'Secure Secrets',    img: 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=800&q=80',  color: 'var(--vault)'   },
+  { path: '/life',    label: 'Life',    sub: 'Tasks & Goals',     img: 'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=800&q=80',  color: 'var(--life)'    },
+  { path: '/journal', label: 'Journal', sub: 'Reflections',       img: 'https://images.unsplash.com/photo-1517842645767-c639042777db?w=800&q=80',  color: 'var(--journal)' },
 ];
 
-const PCOL: Record<string, string> = {
-  high: 'var(--journal)', medium: 'var(--vault)', low: 'var(--wellness)',
-};
+const QUICK_MOODS = [
+  { score: 2,  emoji: '', label: 'Rough' },
+  { score: 4,  emoji: '', label: 'Low'   },
+  { score: 6,  emoji: '', label: 'Ok'    },
+  { score: 8,  emoji: '', label: 'Good'  },
+  { score: 10, emoji: '', label: 'Lit'   },
+];
 
-const moodBarColor = (v: number) =>
-  v >= 8 ? 'var(--wellness)' : v >= 5 ? 'var(--life)' : 'var(--journal)';
-
-function Skeleton({ h = 20, w = '100%', r = 10 }: { h?: number; w?: number | string; r?: number }) {
-  return (
-    <div style={{ height: h, width: w, borderRadius: r, background: 'var(--border)', opacity: 0.5 }} />
-  );
+function Skel({ h = 16, w = '100%', r = 8 }: { h?: number; w?: number | string; r?: number }) {
+  return <div className="skeleton" style={{ height: h, width: w, borderRadius: r }} />;
 }
 
-function GreetingCard({ loading, text }: { loading: boolean; text: string }) {
-  return (
-    <div
-      className="card"
-      style={{
-        background: 'linear-gradient(135deg,#7b6fda18 0%,#3daa8618 100%)',
-        borderLeft: '3px solid var(--mind)',
-        padding: '18px 20px',
-        marginBottom: 16,
-      }}
-    >
-      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--mind)', letterSpacing: '0.07em', marginBottom: 8 }}>
-         LUMINA
-      </p>
-      {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <Skeleton h={15} w="90%" />
-          <Skeleton h={15} w="65%" />
-        </div>
-      ) : (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.6, color: 'var(--text)' }}
-        >
-          {text}
-        </motion.p>
-      )}
-    </div>
-  );
-}
-
-function MoodMiniChart({ data }: { data: MoodEntry[] }) {
-  const last7 = [...data].slice(0, 7).reverse();
-  const navigate = useNavigate();
-  return (
-    <div className="card" style={{ marginTop: 20 }}>
-      <div className="flex justify-between items-center mb-12">
-        <p className="section-label" style={{ margin: 0 }}>7-Day Mood</p>
-        <button
-          onClick={() => navigate('/wellness')}
-          style={{ fontSize: 12, color: 'var(--wellness)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          Full view 
-        </button>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 60 }}>
-        {Array.from({ length: 7 }).map((_, i) => {
-          const entry = last7[i];
-          const val   = entry?.mood_score ?? 0;
-          const pct   = val ? (val / 10) * 100 : 0;
-          const today = new Date();
-          const dayLabels = ['Su','Mo','Tu','We','Th','Fr','Sa'];
-          const label = dayLabels[(today.getDay() - 6 + i + 7) % 7];
-          return (
-            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{ height: pct ? `${Math.max(pct * 0.48, 4)}px` : '4px' }}
-                transition={{ duration: 0.5, delay: i * 0.07 }}
-                style={{
-                  width: '100%',
-                  background: val ? moodBarColor(val) : 'var(--border)',
-                  borderRadius: 4,
-                  opacity: val ? 1 : 0.3,
-                }}
-              />
-              <span style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 600 }}>{label}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function OnThisDayCard({ data }: { data: OnThisDayData }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0  }}
-      className="card mt-20"
-      style={{ background: 'var(--journal-light)', borderLeft: '3px solid var(--journal)', cursor: 'pointer' }}
-      onClick={() => setOpen((x) => !x)}
-    >
-      <div className="flex justify-between items-center">
-        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--journal)', letterSpacing: '0.07em' }}> ON THIS DAY</p>
-        <span style={{ fontSize: 14, color: 'var(--journal)', transform: open ? 'rotate(180deg)' : 'none', transition: '0.2s', display: 'inline-block' }}></span>
-      </div>
-      <p style={{ fontSize: 14, fontWeight: 500, marginTop: 8, lineHeight: 1.55 }}>{data.insight}</p>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            style={{ overflow: 'hidden', marginTop: 12 }}
-          >
-            {data.memories.map((m) => (
-              <div key={m.id} style={{ padding: '8px 0', borderTop: '1px solid rgba(196,96,122,0.15)' }}>
-                <p style={{ fontSize: 12, fontWeight: 700 }}>{m.title}</p>
-                <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-                  {m.content.slice(0, 100)}{m.content.length > 100 ? '' : ''}
-                </p>
-                <p style={{ fontSize: 10, color: 'var(--journal)', marginTop: 4 }}>
-                  {new Date(m.created_at).getFullYear()}
-                </p>
-              </div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
 }
 
 export default function Home() {
-  const navigate = useNavigate();
-  const qc       = useQueryClient();
-  const user     = useAuthStore((s) => s.user);
-
-  const [todayMood, setTodayMood] = useState<number | null>(null);
+  const navigate  = useNavigate();
+  const qc        = useQueryClient();
+  const user      = useAuthStore((s) => s.user);
+  const firstName = user?.full_name?.split(' ')[0] ?? 'there';
+  const addToast  = useAppStore((s) => s.addToast);
   const [moodSaved, setMoodSaved] = useState(false);
 
-  const firstName = user?.full_name?.split(' ')[0] ?? 'there';
-
-  const { data: greeting, isLoading: greetLoading } = useQuery<GreetingData>({
-    queryKey: ['ai-greeting'],
+  const { data: greetData, isLoading: greetLoading } = useQuery<{ greeting: string }>({
+    queryKey: ['greeting'],
     queryFn:  () => api.get('/ai/greeting').then((r) => r.data),
-    staleTime: 1000 * 60 * 60,
-    retry: false,
+    staleTime: 60 * 60 * 1000,
   });
 
   const { data: tasks = [] } = useQuery<Task[]>({
     queryKey: ['tasks'],
     queryFn:  () => api.get('/tasks').then((r) => r.data),
-    staleTime: 5 * 60 * 1000, // 5 min — re-fetch at most once per 5 min
+    staleTime: 30_000,
   });
 
   const { data: memories = [] } = useQuery<Memory[]>({
     queryKey: ['memories'],
     queryFn:  () => api.get('/memories').then((r) => r.data),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60_000,
   });
 
-  const { data: moodHistory = [] } = useQuery<MoodEntry[]>({
+  const { data: moods = [] } = useQuery<MoodEntry[]>({
     queryKey: ['mood'],
-    queryFn:  () => api.get('/wellness/mood').then((r) => r.data),
-    staleTime: 60 * 1000, // 1 min — mood changes frequently
+    queryFn:  () => api.get('/wellness/mood/history').then((r) => r.data),
+    staleTime: 60_000,
   });
 
-  const { data: onThisDay } = useQuery<OnThisDayData>({
-    queryKey: ['on-this-day'],
-    queryFn:  () => api.get('/ai/on-this-day').then((r) => r.data),
-    staleTime: 1000 * 60 * 60 * 6,
-    retry: false,
+  const moodMutation = useMutation({
+    mutationFn: (score: number) =>
+      api.post('/wellness/mood', { mood_score: score, energy_level: score }).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['mood'] });
+      setMoodSaved(true);
+      addToast('success', 'Mood logged ');
+      setTimeout(() => setMoodSaved(false), 3000);
+    },
   });
 
-  const { data: vaultStats } = useQuery<VaultStats>({
-    queryKey: ['vault-count'],
-    queryFn:  () =>
-      api.get('/vault').then((r) => ({ count: Array.isArray(r.data) ? r.data.length : 0 })).catch(() => ({ count: 0 })),
-    staleTime: 10 * 60 * 1000, // 10 min — vault count rarely changes
-  });
-
-  const { data: journals = [] } = useQuery<JournalEntry[]>({
-    queryKey: ['journal'],
-    queryFn:  () => api.get('/journal').then((r) => r.data),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const toggleTask = useMutation({
-    mutationFn: ({ id, done }: { id: string; done: boolean }) =>
-      api.patch(`/tasks/${id}`, { is_completed: done }),
+  const taskCompleteMutation = useMutation({
+    mutationFn: (id: string) => api.patch(`/tasks/${id}/complete`).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
   });
 
-  async function logMood(score: number) {
-    setTodayMood(score);
-    try {
-      await api.post('/wellness/mood', { mood_score: score, energy_level: score, note: '' });
-      qc.invalidateQueries({ queryKey: ['mood'] });
-      setMoodSaved(true);
-    } catch { /* optimistic already shown */ }
-  }
-
-  const pending       = tasks.filter((t) => !t.is_completed);
-  const recentMems    = memories.slice(0, 6);
-  const greetingText  = greeting?.greeting ?? `Welcome back, ${firstName}. Ready to make today count?`;
+  const todayTasks  = tasks.filter((t) => !t.is_completed).slice(0, 4);
+  const last7Moods  = [...moods].slice(0, 7).reverse();
+  const recentMems  = memories.slice(0, 6);
+  const avgMood     = moods.length ? Math.round(moods.slice(0,7).reduce((a,m) => a + m.mood_score, 0) / Math.min(moods.length, 7)) : 0;
 
   return (
-    <motion.div variants={PAGE} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.3 }} className="page">
-
-      {/* Header */}
-      <div className="flex justify-between items-center mb-20">
+    <motion.div {...PAGE_ANIM} className="page">
+      {/*  Header  */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600 }}>
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 500 }}>
+            {getGreeting()},
           </p>
-          <h1 style={{ fontSize: 26, fontWeight: 800, marginTop: 2, letterSpacing: '-0.02em' }}>{firstName} </h1>
+          <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>
+            {firstName} 
+          </h1>
         </div>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => navigate('/wellness')}
-          style={{ width: 48, height: 48, background: 'var(--surface)', borderRadius: '50%', border: '1.5px solid var(--border)', fontSize: 24, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        <div
+          onClick={() => navigate('/profile')}
+          style={{
+            width: 44, height: 44, borderRadius: '50%',
+            background: 'linear-gradient(135deg, var(--mind), var(--wellness))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 18, cursor: 'pointer', flexShrink: 0,
+            border: '2px solid var(--border2)',
+          }}
         >
-          
-        </motion.button>
+          {user?.avatar_url
+            ? <img src={user.avatar_url} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+            : <span>{firstName[0]?.toUpperCase()}</span>
+          }
+        </div>
       </div>
 
-      {/* AI Greeting */}
-      <GreetingCard loading={greetLoading} text={greetingText} />
+      {/*  AI Greeting  */}
+      <div
+        className="card"
+        style={{
+          background: 'linear-gradient(135deg, rgba(123,111,218,0.12), rgba(61,170,134,0.12))',
+          borderColor: 'rgba(123,111,218,0.25)',
+          marginBottom: 20,
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ position: 'absolute', top: -20, right: -20, fontSize: 80, opacity: 0.06 }}></div>
+        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--mind)', letterSpacing: '0.1em', marginBottom: 8 }}>
+           LUMINA AI
+        </p>
+        {greetLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <Skel h={14} w="90%" />
+            <Skel h={14} w="65%" />
+          </div>
+        ) : (
+          <motion.p
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
+            style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--text2)' }}
+          >
+            {greetData?.greeting ?? 'Welcome back. Your journey continues.'}
+          </motion.p>
+        )}
+        {avgMood > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
+            <span style={{ fontSize: 11, color: 'var(--muted)' }}>7-day avg mood</span>
+            <div style={{ height: 4, flex: 1, borderRadius: 4, background: 'var(--surface2)', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${avgMood * 10}%`, background: 'var(--gradient)', borderRadius: 4 }} />
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--mind)' }}>{avgMood}/10</span>
+          </div>
+        )}
+      </div>
 
-      {/* Mood check-in */}
-      <AnimatePresence mode="wait">
-        {!moodSaved ? (
-          <motion.div key="pick" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="card">
-            <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>How are you right now?</p>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              {QUICK_MOODS.map((m) => (
-                <motion.button
-                  key={m.score}
-                  whileHover={{ scale: 1.22 }}
-                  whileTap={{ scale: 0.85 }}
-                  onClick={() => logMood(m.score)}
-                  style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                    background: todayMood === m.score ? 'var(--wellness-light)' : 'none',
-                    border: 'none', cursor: 'pointer', padding: '8px 10px', borderRadius: 12,
-                    outline: todayMood === m.score ? '2px solid var(--wellness)' : 'none',
-                  }}
-                >
-                  <span style={{ fontSize: 28 }}>{m.emoji}</span>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--muted)' }}>{m.label}</span>
-                </motion.button>
-              ))}
+      {/*  Quick mood check-in  */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <p className="section-label" style={{ marginBottom: 14 }}>
+          {moodSaved ? ' MOOD LOGGED' : 'HOW ARE YOU NOW?'}
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          {QUICK_MOODS.map((m) => (
+            <motion.button
+              key={m.score}
+              whileTap={{ scale: 0.85 }}
+              onClick={() => !moodSaved && moodMutation.mutate(m.score)}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                padding: '8px 4px', borderRadius: 12, background: 'none', border: 'none',
+                cursor: moodSaved ? 'default' : 'pointer', opacity: moodSaved ? 0.6 : 1,
+              }}
+            >
+              <span style={{ fontSize: 28 }}>{m.emoji}</span>
+              <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600 }}>{m.label}</span>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+
+      {/*  Module cards 2grid  */}
+      <p className="section-label">YOUR MODULES</p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+        {MODULES.map((mod) => (
+          <motion.div
+            key={mod.path}
+            className="module-card-img"
+            whileTap={{ scale: 0.97 }}
+            onClick={() => navigate(mod.path)}
+          >
+            <img src={mod.img} alt={mod.label} loading="lazy" />
+            <div className="overlay">
+              <p style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{mod.label}</p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>{mod.sub}</p>
             </div>
           </motion.div>
-        ) : (
-          <motion.div key="saved" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} className="card" style={{ background: 'var(--wellness-light)', textAlign: 'center', padding: 20 }}>
-            <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400, damping: 15 }} style={{ fontSize: 36, display: 'block' }}>
-              {QUICK_MOODS.find((m) => m.score === todayMood)?.emoji ?? ''}
-            </motion.span>
-            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--wellness)', marginTop: 8 }}>Mood logged </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Module grid */}
-      <div style={{ marginTop: 24 }}>
-        <p className="section-label">Modules</p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <ModuleCard title="Mind"     subtitle="Notes & memories"       emoji="" color="var(--mind)"    colorLight="var(--mind-light)"    path="/mind"     count={memories.length}      countLabel="notes"   />
-          <ModuleCard title="Wellness" subtitle="Mood & sleep"            emoji="" color="var(--wellness)" colorLight="var(--wellness-light)" path="/wellness" count={moodHistory.length}   countLabel="logs"    />
-          <ModuleCard title="Vault"    subtitle="Encrypted secrets"       emoji="" color="var(--vault)"   colorLight="var(--vault-light)"   path="/vault"    count={vaultStats?.count}    countLabel="items"   />
-          <ModuleCard title="Life"     subtitle="Tasks & goals"           emoji="" color="var(--life)"    colorLight="var(--life-light)"    path="/life"     count={pending.length}       countLabel="open"    />
-          <ModuleCard title="Journal"  subtitle="AI prompts & reflection" emoji="" color="var(--journal)" colorLight="var(--journal-light)" path="/journal"  count={journals.length}      countLabel="entries" />
-          <div />
-        </div>
+        ))}
+        {/* Health card spans full width */}
+        <motion.div
+          className="module-card-img"
+          style={{ gridColumn: 'span 1' }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => navigate('/health')}
+        >
+          <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&q=80" alt="Health" loading="lazy" />
+          <div className="overlay">
+            <p style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>Health</p>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>Nutrition & AI</p>
+          </div>
+        </motion.div>
       </div>
 
-      {/* Today's tasks */}
-      <div style={{ marginTop: 28 }}>
-        <div className="flex justify-between items-center mb-12">
-          <p className="section-label" style={{ margin: 0 }}>Today's Focus</p>
-          <button onClick={() => navigate('/life')} style={{ fontSize: 13, color: 'var(--life)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>
-            All tasks 
-          </button>
-        </div>
-        {pending.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '20px 16px' }}>
-            <span style={{ fontSize: 28 }}></span>
-            <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 8 }}>All caught up!</p>
+      {/*  Today's tasks  */}
+      {todayTasks.length > 0 && (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <p className="section-label" style={{ margin: 0 }}>TODAY'S TASKS</p>
+            <button onClick={() => navigate('/life')} style={{ fontSize: 12, color: 'var(--life)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>
+              All 
+            </button>
           </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <AnimatePresence>
-              {pending.slice(0, 3).map((task, i) => (
-                <motion.div
-                  key={task.id}
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 40, height: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="card"
-                  style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}
-                >
-                  <motion.button
-                    whileTap={{ scale: 0.75 }}
-                    onClick={() => toggleTask.mutate({ id: task.id, done: true })}
-                    style={{ width: 22, height: 22, flexShrink: 0, borderRadius: '50%', border: `2.5px solid ${PCOL[task.priority] ?? 'var(--border)'}`, background: 'transparent', cursor: 'pointer' }}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</p>
-                    {task.due_date && (
-                      <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-                         {new Date(task.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                      </p>
-                    )}
-                  </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20, background: (PCOL[task.priority] ?? 'var(--border)') + '22', color: PCOL[task.priority] ?? 'var(--muted)' }}>
-                    {task.priority}
-                  </span>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            {pending.length > 3 && (
-              <button onClick={() => navigate('/life')} style={{ fontSize: 13, color: 'var(--life)', fontWeight: 600, padding: 8, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'center' }}>
-                +{pending.length - 3} more 
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* 7-Day mood chart */}
-      {moodHistory.length > 0 && <MoodMiniChart data={moodHistory} />}
-
-      {/* On This Day */}
-      {onThisDay?.has_memories && <OnThisDayCard data={onThisDay} />}
-
-      {/* Recent memories */}
-      {recentMems.length > 0 && (
-        <div style={{ marginTop: 28, marginBottom: 8 }}>
-          <div className="flex justify-between items-center mb-12">
-            <p className="section-label" style={{ margin: 0 }}>Recent Memories</p>
-            <button onClick={() => navigate('/mind')} style={{ fontSize: 13, color: 'var(--mind)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>See all </button>
-          </div>
-          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
-            {recentMems.map((m, i) => (
+          <div className="card" style={{ marginBottom: 20, padding: 0, overflow: 'hidden' }}>
+            {todayTasks.map((task, i) => (
               <motion.div
-                key={m.id}
-                initial={{ opacity: 0, x: 20 }}
+                key={task.id}
+                initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.06 }}
-                onClick={() => navigate('/mind')}
-                style={{ minWidth: 175, background: 'var(--surface)', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', padding: '14px', cursor: 'pointer', flexShrink: 0, boxShadow: 'var(--shadow-sm)' }}
+                transition={{ delay: i * 0.05 }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '13px 16px',
+                  borderBottom: i < todayTasks.length - 1 ? '1px solid var(--border)' : 'none',
+                }}
               >
-                <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</p>
-                <p style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {m.content}
+                <button
+                  onClick={() => taskCompleteMutation.mutate(task.id)}
+                  style={{
+                    width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                    border: `2px solid ${task.priority === 'urgent' ? 'var(--journal)' : task.priority === 'high' ? 'var(--vault)' : 'var(--border2)'}`,
+                    background: 'none', cursor: 'pointer',
+                  }}
+                />
+                <span style={{ fontSize: 14, color: 'var(--text)', flex: 1 }}>{task.title}</span>
+                {task.priority === 'urgent' && <span style={{ fontSize: 10, color: 'var(--journal)', fontWeight: 700 }}>URGENT</span>}
+                {task.priority === 'high'   && <span style={{ fontSize: 10, color: 'var(--vault)',   fontWeight: 700 }}>HIGH</span>}
+              </motion.div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/*  7-day mood chart  */}
+      {last7Moods.length > 0 && (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <p className="section-label" style={{ margin: 0 }}>7-DAY MOOD</p>
+            <button onClick={() => navigate('/wellness')} style={{ fontSize: 12, color: 'var(--wellness)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>
+              Full view 
+            </button>
+          </div>
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 64 }}>
+              {Array.from({ length: 7 }).map((_, i) => {
+                const entry = last7Moods[i];
+                const val   = entry?.mood_score ?? 0;
+                const h     = val ? Math.max(8, (val / 10) * 64) : 8;
+                return (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: h }}
+                      transition={{ delay: i * 0.04, type: 'spring', damping: 18 }}
+                      style={{
+                        width: '100%', borderRadius: 4,
+                        background: val >= 8 ? 'var(--wellness)' : val >= 5 ? 'var(--life)' : val > 0 ? 'var(--journal)' : 'var(--surface2)',
+                        opacity: val ? 1 : 0.3,
+                      }}
+                    />
+                    <span style={{ fontSize: 9, color: 'var(--muted)' }}>
+                      {entry ? new Date(entry.recorded_at || entry.created_at).toLocaleDateString('en', { weekday: 'narrow' }) : ''}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/*  Recent memories horizontal scroll  */}
+      {recentMems.length > 0 && (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <p className="section-label" style={{ margin: 0 }}>RECENT MEMORIES</p>
+            <button onClick={() => navigate('/mind')} style={{ fontSize: 12, color: 'var(--mind)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>
+              All 
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', marginBottom: 20 }}>
+            {recentMems.map((mem) => (
+              <motion.div
+                key={mem.id}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => navigate('/mind')}
+                style={{
+                  flexShrink: 0, width: 160, padding: '14px', borderRadius: 'var(--r-lg)',
+                  background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer',
+                }}
+              >
+                <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 6, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {mem.title || 'Memory'}
                 </p>
-                <p style={{ fontSize: 10, color: 'var(--muted)', marginTop: 8 }}>
-                  {new Date(m.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                <p style={{ fontSize: 11, color: 'var(--text2)', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  {mem.content}
                 </p>
               </motion.div>
             ))}
           </div>
-        </div>
+        </>
       )}
+
+      <div style={{ height: 8 }} />
     </motion.div>
   );
 }

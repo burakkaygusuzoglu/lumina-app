@@ -1,16 +1,19 @@
 /**
- * App store — cached memories, tasks, and mood data (in-memory only).
- * React Query handles server state; this store holds UI selections / local cache.
+ * App store — extended types for full Lumina Life OS feature set.
  */
 import { create } from 'zustand';
 
-/* ── Types ──────────────────────────────────────────────────────────────── */
+/* ── Types ───────────────────────────────────────────────────────────────── */
 
 export interface Memory {
   id: string;
-  title: string;
+  title?: string;
   content: string;
+  memory_type?: string;
   tags?: string[];
+  mood_score?: number;
+  importance?: number;
+  photo_url?: string;
   created_at: string;
   updated_at?: string;
 }
@@ -20,15 +23,17 @@ export interface Task {
   title: string;
   description?: string;
   is_completed: boolean;
-  priority: 'low' | 'medium' | 'high';
+  status?: 'pending' | 'completed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date?: string;
+  tags?: string[];
   created_at: string;
 }
 
 export interface MoodEntry {
   id: string;
-  mood_score: number;   // 1–10
-  energy_level: number; // 1–10
+  mood_score: number;
+  energy_level: number;
   note?: string;
   recorded_at: string;
   created_at: string;
@@ -37,7 +42,8 @@ export interface MoodEntry {
 export interface SleepEntry {
   id: string;
   hours_slept: number;
-  quality: number; // 1–5
+  hours?: number;
+  quality: number;
   recorded_at: string;
   created_at: string;
 }
@@ -45,8 +51,16 @@ export interface SleepEntry {
 export interface VaultItem {
   id: string;
   title: string;
-  category: string;
+  category: 'password' | 'note' | 'card' | 'document';
+  content?: string;
+  username?: string;
+  password?: string;
+  url?: string;
+  card_number?: string;
+  expiry?: string;
+  cvv?: string;
   note?: string;
+  tags?: string[];
   created_at: string;
 }
 
@@ -54,44 +68,84 @@ export interface JournalEntry {
   id: string;
   content: string;
   ai_prompt?: string;
+  mood?: number;
   mood_snapshot?: number;
+  tags?: string[];
   created_at: string;
 }
 
-/* ── Store ──────────────────────────────────────────────────────────────── */
+export interface TimeCapsule {
+  id: string;
+  content: string;
+  reveal_date: string;
+  is_revealed: boolean;
+  ai_seal_message?: string;
+  created_at: string;
+}
 
+export interface NutritionEntry {
+  id: string;
+  food_name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber?: number;
+  portion?: string;
+  health_score?: number;
+  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  photo_url?: string;
+  created_at: string;
+}
+
+export interface Appointment {
+  id: string;
+  title: string;
+  doctor?: string;
+  date: string;
+  location?: string;
+  notes?: string;
+  created_at: string;
+}
+
+/* ── Toast ─────────────────────────────────────────────────────────────── */
+export interface ToastMessage {
+  id: string;
+  type: 'success' | 'error' | 'info';
+  message: string;
+}
+
+/* ── Store ──────────────────────────────────────────────────────────────── */
 interface AppState {
-  /* Memories */
   memories: Memory[];
   setMemories: (m: Memory[]) => void;
   addMemory:   (m: Memory)   => void;
   removeMemory: (id: string) => void;
 
-  /* Tasks */
   tasks: Task[];
   setTasks:    (t: Task[])  => void;
   addTask:     (t: Task)    => void;
   updateTask:  (id: string, changes: Partial<Task>) => void;
   removeTask:  (id: string) => void;
 
-  /* Mood */
   moodEntries: MoodEntry[];
   setMoodEntries: (m: MoodEntry[]) => void;
   addMoodEntry:   (m: MoodEntry)   => void;
 
-  /* UI flags */
+  toasts: ToastMessage[];
+  addToast: (type: ToastMessage['type'], message: string) => void;
+  removeToast: (id: string) => void;
+
   activeModule: string;
   setActiveModule: (m: string) => void;
 }
 
 export const useAppStore = create<AppState>()((set) => ({
-  /* Memories */
   memories:    [],
   setMemories: (memories)   => set({ memories }),
   addMemory:   (m)          => set((s) => ({ memories: [m, ...s.memories] })),
   removeMemory: (id)         => set((s) => ({ memories: s.memories.filter((x) => x.id !== id) })),
 
-  /* Tasks */
   tasks:     [],
   setTasks:  (tasks)   => set({ tasks }),
   addTask:   (t)       => set((s) => ({ tasks: [t, ...s.tasks] })),
@@ -99,12 +153,19 @@ export const useAppStore = create<AppState>()((set) => ({
     set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...changes } : t)) })),
   removeTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
 
-  /* Mood */
   moodEntries:    [],
   setMoodEntries: (entries) => set({ moodEntries: entries }),
   addMoodEntry:   (m)       => set((s) => ({ moodEntries: [m, ...s.moodEntries] })),
 
-  /* UI */
+  toasts: [],
+  addToast: (type, message) => {
+    const id = Math.random().toString(36).slice(2);
+    set((s) => ({ toasts: [...s.toasts, { id, type, message }] }));
+    setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 3000);
+  },
+  removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+
   activeModule:    'home',
   setActiveModule: (activeModule) => set({ activeModule }),
 }));
+

@@ -52,7 +52,7 @@ export default function Login() {
         >
           ✨
         </motion.div>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', marginBottom: 6 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', marginBottom: 6, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>
           Lumina Life OS
         </h1>
         <p style={{ fontSize: 15, color: 'var(--muted)' }}>
@@ -97,12 +97,12 @@ export default function Login() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               style={{
-                background: '#fff0f0',
-                border: '1px solid #ffd0d0',
+                background: 'rgba(196,96,122,0.12)',
+                border: '1px solid rgba(196,96,122,0.35)',
                 borderRadius: 'var(--r-sm)',
                 padding: '10px 14px',
                 fontSize: 13,
-                color: '#c0392b',
+                color: 'var(--journal)',
                 fontWeight: 500,
               }}
             >

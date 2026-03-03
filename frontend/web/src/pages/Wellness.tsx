@@ -1,330 +1,333 @@
-﻿/**
- * Wellness - mood tracker, sleep logger, AI pattern insight, and charts.
- */
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  AreaChart, Area, BarChart, Bar,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-} from "recharts";
-import { api } from "../lib/api";
-import type { MoodEntry, SleepEntry } from "../store/appStore";
+﻿import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
+import { api } from '../lib/api';
+import { useAppStore } from '../store/appStore';
+import type { MoodEntry, SleepEntry } from '../store/appStore';
+import ConfirmModal from '../components/ConfirmModal';
 
 const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
+const MOODS = ['','','','','','','','','',''];
+const MOOD_LABELS = ['Terrible','Bad','Meh','Okay','Good','Great','Amazing','Wonderful','Incredible','Euphoric'];
+const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+const WATER_GOAL = 8;
 
-const MOOD_EMOJIS = ["","","","","","","","","",""];
-const MOOD_LABELS = ["Rough","Low","Okay","Good","Nice","Great","Happy","Amazing","Glowing","On fire"];
-
-function Skeleton({ h = 20, w = "100%", r = 10 }: { h?: number; w?: number | string; r?: number }) {
-  return <div style={{ height: h, width: w, borderRadius: r, background: "var(--border)", opacity: 0.5 }} />;
-}
-
-interface PatternData {
-  pattern_type: string; severity: string; title: string;
-  description: string; suggested_action: string;
-}
-
-function MoodSheet({ onClose }: { onClose: () => void }) {
-  const qc = useQueryClient();
-  const [mood, setMood] = useState(7);
-  const [energy, setEnergy] = useState(7);
-  const [note, setNote] = useState("");
-
-  const mutation = useMutation({
-    mutationFn: () => api.post("/wellness/mood", { mood_score: mood, energy_level: energy, note }).then((r) => r.data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["mood"] }); onClose(); },
-  });
-
+interface WaterTrackerProps { consumed: number; onAdd: () => void; onRemove: () => void }
+function WaterTracker({ consumed, onAdd, onRemove }: WaterTrackerProps) {
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <motion.div initial={{ y: 300 }} animate={{ y: 0 }} exit={{ y: 300 }} transition={{ type: "spring", damping: 25, stiffness: 300 }} className="modal-sheet">
-        <div className="modal-handle" />
-        <div className="flex justify-between items-center mb-16">
-          <h3 style={{ fontSize: 18, fontWeight: 700 }}>Log Mood</h3>
-          <button className="btn-icon" onClick={onClose}>X</button>
+    <div className="card" style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div>
+          <p className="section-label"> WATER TRACKER</p>
+          <p style={{ fontSize: 13, color: 'var(--muted)' }}>{consumed}/{WATER_GOAL} glasses today</p>
         </div>
-        <div style={{ textAlign: "center", marginBottom: 16 }}>
-          <motion.span key={mood} initial={{ scale: 0.6 }} animate={{ scale: 1 }} style={{ fontSize: 60, display: "block" }}>
-            {MOOD_EMOJIS[mood - 1]}
-          </motion.span>
-          <p style={{ fontSize: 17, fontWeight: 700, marginTop: 6 }}>{MOOD_LABELS[mood - 1]}</p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-icon" onClick={onRemove} disabled={consumed === 0} style={{ width: 34, height: 34, fontSize: 18 }}></button>
+          <button onClick={onAdd} disabled={consumed >= WATER_GOAL}
+            style={{ padding: '8px 16px', borderRadius: 'var(--r-md)', background: 'rgba(61,170,134,0.15)', border: '1px solid rgba(61,170,134,0.3)', color: 'var(--wellness)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            + Add Glass
+          </button>
         </div>
-        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 6 }}>MOOD {mood}/10</p>
-        <input type="range" min={1} max={10} value={mood} onChange={(e) => setMood(Number(e.target.value))} style={{ width: "100%", accentColor: "var(--wellness)", marginBottom: 20 }} />
-        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 6 }}>ENERGY {energy}/10 </p>
-        <input type="range" min={1} max={10} value={energy} onChange={(e) => setEnergy(Number(e.target.value))} style={{ width: "100%", accentColor: "var(--life)", marginBottom: 20 }} />
-        <textarea className="field" placeholder="Optional note..." rows={2} value={note} onChange={(e) => setNote(e.target.value)} style={{ marginBottom: 14 }} />
-        <button className="btn-primary" onClick={() => mutation.mutate()} disabled={mutation.isPending} style={{ background: "var(--wellness)", boxShadow: "0 4px 16px rgba(61,170,134,0.35)" }}>
-          {mutation.isPending ? "Saving..." : "Log Mood"}
-        </button>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-function SleepSheet({ onClose }: { onClose: () => void }) {
-  const qc = useQueryClient();
-  const [hours, setHours] = useState(7);
-  const [quality, setQuality] = useState(3);
-
-  const mutation = useMutation({
-    mutationFn: () => api.post("/wellness/sleep", { hours_slept: hours, quality }).then((r) => r.data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["sleep"] }); onClose(); },
-  });
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <motion.div initial={{ y: 300 }} animate={{ y: 0 }} exit={{ y: 300 }} transition={{ type: "spring", damping: 25, stiffness: 300 }} className="modal-sheet">
-        <div className="modal-handle" />
-        <div className="flex justify-between items-center mb-16">
-          <h3 style={{ fontSize: 18, fontWeight: 700 }}>Log Sleep</h3>
-          <button className="btn-icon" onClick={onClose}>X</button>
-        </div>
-        <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <span style={{ fontSize: 56 }}>{hours >= 7 ? "" : hours >= 5 ? "" : ""}</span>
-          <p style={{ fontSize: 28, fontWeight: 800, marginTop: 8 }}>{hours}h</p>
-          <p style={{ fontSize: 13, color: "var(--muted)" }}>{hours >= 8 ? "Excellent!" : hours >= 6 ? "Good rest" : hours >= 4 ? "Could be better" : "Very short"}</p>
-        </div>
-        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 6 }}>HOURS</p>
-        <input type="range" min={0} max={12} step={0.5} value={hours} onChange={(e) => setHours(Number(e.target.value))} style={{ width: "100%", accentColor: "var(--life)", marginBottom: 20 }} />
-        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 8 }}>QUALITY</p>
-        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-          {[1,2,3,4,5].map((q) => (
-            <button key={q} onClick={() => setQuality(q)} style={{ flex: 1, padding: "10px 0", borderRadius: "var(--r-sm)", border: quality === q ? "2px solid var(--wellness)" : "2px solid var(--border)", background: quality === q ? "var(--wellness-light)" : "var(--bg)", fontSize: 16, cursor: "pointer" }}>
-              {"".repeat(q)}
-            </button>
-          ))}
-        </div>
-        <button className="btn-primary" onClick={() => mutation.mutate()} disabled={mutation.isPending} style={{ background: "var(--life)", boxShadow: "0 4px 16px rgba(74,143,212,0.35)" }}>
-          {mutation.isPending ? "Saving..." : "Log Sleep"}
-        </button>
-      </motion.div>
-    </motion.div>
+      </div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {Array.from({ length: WATER_GOAL }).map((_, i) => (
+          <motion.div key={i} initial={{ scale: 0.7 }} animate={{ scale: 1 }} transition={{ delay: i * 0.04 }}
+            style={{ width: 36, height: 44, borderRadius: 8, background: i < consumed ? 'linear-gradient(180deg, #5dd7b5, var(--wellness))' : 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, transition: 'background 0.3s' }}>
+            
+          </motion.div>
+        ))}
+      </div>
+    </div>
   );
 }
 
 export default function Wellness() {
-  const [activeSheet, setActiveSheet] = useState<"mood" | "sleep" | null>(null);
-
-  const { data: moodData = [], isLoading: moodLoading } = useQuery<MoodEntry[]>({
-    queryKey: ["mood"],
-    queryFn:  () => api.get("/wellness/mood").then((r) => r.data),
-    staleTime: 60 * 1000, // 1 min
+  const qc       = useQueryClient();
+  const addToast = useAppStore((s) => s.addToast);
+  const [tab, setTab]             = useState<'mood'|'sleep'|'fitness'>('mood');
+  const [waterConsumed, setWater] = useState(() => {
+    const stored = sessionStorage.getItem('water_today');
+    return stored ? Number(stored) : 0;
   });
 
-  const { data: sleepData = [], isLoading: sleepLoading } = useQuery<SleepEntry[]>({
-    queryKey: ["sleep"],
-    queryFn:  () => api.get("/wellness/sleep").then((r) => r.data),
-    staleTime: 60 * 1000,
+  // Mood
+  const [moodValue, setMoodValue] = useState(7);
+  const [moodNote,  setMoodNote]  = useState('');
+
+  // Sleep
+  const [sleepHours,   setSleepHours]   = useState('7.5');
+  const [sleepQuality, setSleepQuality] = useState<number>(7);
+  const [sleepNote,    setSleepNote]    = useState('');
+
+  // Exercise
+  const [exType, setExType] = useState('');
+  const [exDur, setExDur]   = useState('');
+  const [exCal, setExCal]   = useState('');
+
+  // Appointment
+  const [showAppt, setShowAppt]       = useState(false);
+  const [apptTitle, setApptTitle]     = useState('');
+  const [apptDate, setApptDate]       = useState('');
+  const [apptTime, setApptTime]       = useState('');
+  const [apptDoctor, setApptDoctor]   = useState('');
+  const [deleteApptId, setDeleteApptId] = useState<string | null>(null);
+
+  const { data: moods = [], isLoading: moodsLoading } = useQuery<MoodEntry[]>({
+    queryKey: ['moods'],
+    queryFn:  () => api.get('/wellness/mood').then((r) => r.data),
+    staleTime: 60_000,
+  });
+  const { data: sleepLogs = [], isLoading: sleepLoading } = useQuery<SleepEntry[]>({
+    queryKey: ['sleep'],
+    queryFn:  () => api.get('/wellness/sleep').then((r) => r.data),
+    staleTime: 60_000,
+  });
+  const { data: appointments = [] } = useQuery<{ id: string; title: string; date: string; time: string; doctor?: string }[]>({
+    queryKey: ['appointments'],
+    queryFn:  () => api.get('/wellness/appointments').then((r) => r.data).catch(() => []),
+    staleTime: 60_000,
   });
 
-  const { data: pattern } = useQuery<PatternData>({
-    queryKey: ["mood-pattern"],
-    queryFn:  () => api.post("/ai/insight/mood-pattern").then((r) => r.data),
-    staleTime: 1000 * 60 * 60,
-    retry: false,
-    enabled: moodData.length >= 3,
+  const moodMutation = useMutation({
+    mutationFn: () => api.post('/wellness/mood', { mood_score: moodValue, note: moodNote || undefined }).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['moods'] }); addToast('success', 'Mood logged '); setMoodNote(''); },
+    onError:   () => addToast('error', 'Failed to log mood'),
   });
 
-  const avgMood  = moodData.length  ? (moodData.reduce((s, m) => s + m.mood_score,   0) / moodData.length).toFixed(1) : null;
-  const avgSleep = sleepData.length ? (sleepData.reduce((s, e) => s + e.hours_slept, 0) / sleepData.length).toFixed(1) : null;
-  const latestMood = moodData[0];
+  const sleepMutation = useMutation({
+    mutationFn: () => api.post('/wellness/sleep', { hours: parseFloat(sleepHours), quality: sleepQuality, notes: sleepNote || undefined }).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sleep'] }); addToast('success', 'Sleep logged '); setSleepNote(''); },
+    onError:   () => addToast('error', 'Failed to log sleep'),
+  });
 
-  // Streak: consecutive days with a mood log
-  const streak = (() => {
-    if (!moodData.length) return 0;
-    const days = new Set(moodData.map((m) => new Date(m.recorded_at ?? m.created_at ?? "").toDateString()));
-    let count = 0;
+  const exerciseMutation = useMutation({
+    mutationFn: () => api.post('/wellness/exercise', { exercise_type: exType, duration_minutes: Number(exDur), calories_burned: exCal ? Number(exCal) : undefined }).then((r) => r.data),
+    onSuccess: () => { addToast('success', 'Exercise logged '); setExType(''); setExDur(''); setExCal(''); },
+    onError:   () => addToast('error', 'Failed to log exercise'),
+  });
+
+  const apptMutation = useMutation({
+    mutationFn: () => api.post('/wellness/appointments', { title: apptTitle, date: apptDate, time: apptTime, doctor: apptDoctor || undefined }).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['appointments'] }); addToast('success', 'Appointment saved '); setShowAppt(false); setApptTitle(''); setApptDate(''); setApptTime(''); setApptDoctor(''); },
+    onError:   () => addToast('error', 'Failed to save appointment'),
+  });
+
+  const deleteApptMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/wellness/appointments/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['appointments'] }); addToast('success', 'Appointment removed'); setDeleteApptId(null); },
+    onError:   () => addToast('error', 'Failed to delete'),
+  });
+
+  const chartData = (() => {
     const today = new Date();
-    while (days.has(new Date(today.getTime() - count * 86400000).toDateString())) count++;
-    return count;
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - (6 - i));
+      const dateStr = d.toISOString().split('T')[0];
+      const entry = moods.find((m) => m.created_at.startsWith(dateStr));
+      return { day: DAYS[d.getDay()], value: entry?.mood_score ?? 0 };
+    });
   })();
 
-  // Chart data
-  const moodChartData = [...moodData].reverse().slice(-30).map((m, i) => ({
-    day: i + 1,
-    mood: m.mood_score,
-    energy: m.energy_level,
-  }));
+  const avgMood = moods.length ? (moods.slice(0, 7).reduce((a, b) => a + b.mood_score, 0) / Math.min(moods.length, 7)).toFixed(1) : '';
+  const avgSleep = sleepLogs.length ? (sleepLogs.slice(0, 7).reduce((a, b) => a + (b.hours_slept ?? b.hours ?? 0), 0) / Math.min(sleepLogs.length, 7)).toFixed(1) : '';
+  const barColor = (v: number) => v >= 8 ? '#3daa86' : v >= 5 ? '#7b6fda' : '#c4607a';
 
-  const sleepChartData = [...sleepData].reverse().slice(-14).map((s, i) => ({
-    day: i + 1,
-    hours: s.hours_slept,
-    quality: s.quality * 2,
-  }));
+  function updateWater(delta: number) {
+    const next = Math.max(0, Math.min(WATER_GOAL, waterConsumed + delta));
+    setWater(next);
+    sessionStorage.setItem('water_today', String(next));
+    if (delta > 0 && next === WATER_GOAL) addToast('success', 'Hydration goal reached! ');
+  }
 
-  const severityColor = (s: string) =>
-    s === "high" ? "var(--journal)" : s === "medium" ? "var(--vault)" : "var(--wellness)";
 
   return (
-    <>
-      <motion.div variants={PAGE} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.35 }} className="page">
-
-        {/* Header */}
-        <p style={{ fontSize: 13, color: "var(--wellness)", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}> Wellness</p>
-        <h1 style={{ fontSize: 24, fontWeight: 800, marginTop: 2, marginBottom: 20, letterSpacing: "-0.02em" }}>Your Health</h1>
-
-        {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
-          {[
-            { label: "Avg Mood", value: avgMood ?? "", suffix: "/10", color: "var(--wellness)", bg: "var(--wellness-light)", emoji: "" },
-            { label: "Avg Sleep", value: avgSleep ?? "", suffix: "h",  color: "var(--life)",    bg: "var(--life-light)",    emoji: "" },
-            { label: "Logs",   value: String(moodData.length),  suffix: " total", color: "var(--mind)", bg: "var(--mind-light)", emoji: "" },
-            { label: "Streak", value: String(streak),           suffix: " day" + (streak !== 1 ? "s" : ""), color: "var(--vault)", bg: "var(--vault-light)", emoji: streak > 0 ? "" : "" },
-          ].map((stat) => (
-            <div key={stat.label} className="card" style={{ background: stat.bg, textAlign: "center", padding: "16px 12px" }}>
-              <p style={{ fontSize: 22 }}>{stat.emoji}</p>
-              <p style={{ fontSize: 20, fontWeight: 800, color: stat.color, marginTop: 4 }}>
-                {moodLoading ? <Skeleton h={22} w={60} /> : <>{stat.value}<span style={{ fontSize: 11 }}>{stat.suffix}</span></>}
-              </p>
-              <p style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600, marginTop: 4 }}>{stat.label}</p>
-            </div>
-          ))}
+    <motion.div {...PAGE} className="page">
+      <div style={{ marginBottom: 20 }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>Wellness</h1>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <div className="card" style={{ flex: 1, textAlign: 'center', padding: '10px 8px' }}>
+            <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--wellness)' }}>{avgMood}</p>
+            <p style={{ fontSize: 11, color: 'var(--muted)' }}>Avg Mood</p>
+          </div>
+          <div className="card" style={{ flex: 1, textAlign: 'center', padding: '10px 8px' }}>
+            <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--life)' }}>{avgSleep}h</p>
+            <p style={{ fontSize: 11, color: 'var(--muted)' }}>Avg Sleep</p>
+          </div>
+          <div className="card" style={{ flex: 1, textAlign: 'center', padding: '10px 8px' }}>
+            <p style={{ fontSize: 22, fontWeight: 800, color: '#5dd7b5' }}>{waterConsumed}/{WATER_GOAL}</p>
+            <p style={{ fontSize: 11, color: 'var(--muted)' }}>Water</p>
+          </div>
         </div>
+      </div>
 
-        {/* Action buttons */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
-          <motion.button whileTap={{ scale: 0.95 }} onClick={() => setActiveSheet("mood")} className="card" style={{ textAlign: "center", cursor: "pointer", padding: "20px 12px", background: "var(--wellness-light)", border: "1px solid rgba(61,170,134,0.2)" }}>
-            <p style={{ fontSize: 32, marginBottom: 6 }}>{latestMood ? MOOD_EMOJIS[latestMood.mood_score - 1] : ""}</p>
-            <p style={{ fontSize: 14, fontWeight: 700, color: "var(--wellness)" }}>Log Mood</p>
-          </motion.button>
-          <motion.button whileTap={{ scale: 0.95 }} onClick={() => setActiveSheet("sleep")} className="card" style={{ textAlign: "center", cursor: "pointer", padding: "20px 12px", background: "var(--life-light)", border: "1px solid rgba(74,143,212,0.2)" }}>
-            <p style={{ fontSize: 32, marginBottom: 6 }}></p>
-            <p style={{ fontSize: 14, fontWeight: 700, color: "var(--life)" }}>Log Sleep</p>
-          </motion.button>
-        </div>
+      {/* Tab bar */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {(['mood','sleep','fitness'] as const).map((t, ti) => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`chip${tab === t ? ' active' : ''}`} style={{ flex: 1, justifyContent: 'center' }}>
+            {['Mood','Fitness','Appts'][ti]}
+          </button>
+        ))}
+      </div>
 
-        {/* AI Pattern insight */}
-        {pattern && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="card" style={{ background: "linear-gradient(135deg,#7b6fda18 0%,#3daa8618 100%)", borderLeft: `3px solid ${severityColor(pattern.severity)}`, marginBottom: 24 }}>
-            <div className="flex justify-between items-center mb-8">
-              <p style={{ fontSize: 11, fontWeight: 700, color: severityColor(pattern.severity), letterSpacing: "0.07em" }}>
-                 AI PATTERN INSIGHT
-              </p>
-              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: severityColor(pattern.severity) + "22", color: severityColor(pattern.severity) }}>
-                {pattern.severity}
-              </span>
+      {/* MOOD TAB */}
+      <AnimatePresence mode="wait">
+        {tab === 'mood' && (
+          <motion.div key="mood" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            {/* 7-day bar chart */}
+            <div className="card" style={{ marginBottom: 16 }}>
+              <p className="section-label">7-DAY MOOD TREND</p>
+              {moodsLoading ? <div className="skeleton" style={{ height: 80 }} /> : (
+                <ResponsiveContainer width="100%" height={80} style={{ marginTop: 4 }}>
+                  <BarChart data={chartData} barSize={22}>
+                    <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 10]} hide />
+                    <Tooltip contentStyle={{ background: 'var(--surface)', border: 'none', borderRadius: 8, fontSize: 12 }} />
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                      {chartData.map((entry, i) => <Cell key={i} fill={barColor(entry.value)} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
-            <p style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>{pattern.title}</p>
-            <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.55, marginBottom: 10 }}>{pattern.description}</p>
-            {pattern.suggested_action && (
-              <p style={{ fontSize: 12, fontWeight: 600, color: severityColor(pattern.severity) }}>
-                Suggestion: {pattern.suggested_action}
-              </p>
-            )}
+
+            {/* Log mood */}
+            <div className="card" style={{ marginBottom: 16 }}>
+              <p className="section-label">LOG TODAY'S MOOD</p>
+              <div style={{ textAlign: 'center', marginTop: 12, marginBottom: 16 }}>
+                <motion.div key={moodValue} initial={{ scale: 0.6 }} animate={{ scale: 1 }} style={{ fontSize: 52, lineHeight: 1 }}>
+                  {MOODS[moodValue - 1] ?? ''}
+                </motion.div>
+                <p style={{ fontSize: 14, fontWeight: 600, marginTop: 6, color: 'var(--text2)' }}>{MOOD_LABELS[moodValue - 1]}</p>
+                <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--wellness)' }}>{moodValue}/10</p>
+              </div>
+              <input type="range" min={1} max={10} value={moodValue} onChange={(e) => setMoodValue(Number(e.target.value))} style={{ accentColor: 'var(--wellness)', marginBottom: 12 }} />
+              <textarea className="field" placeholder="Optional note" rows={2} value={moodNote} onChange={(e) => setMoodNote(e.target.value)} style={{ marginBottom: 12 }} />
+              <button className="btn-primary" onClick={() => moodMutation.mutate()} disabled={moodMutation.isPending}>
+                {moodMutation.isPending ? 'Logging' : 'Log Mood'}
+              </button>
+            </div>
+
+            {/* Sleep log */}
+            <div className="card">
+              <p className="section-label">LOG SLEEP</p>
+              <div style={{ display: 'flex', gap: 10, marginTop: 12, marginBottom: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Hours</p>
+                  <input className="field" type="number" step="0.5" min="0" max="24" value={sleepHours} onChange={(e) => setSleepHours(e.target.value)} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Quality (110)</p>
+                  <input className="field" type="number" min="1" max="10" value={sleepQuality} onChange={(e) => setSleepQuality(Number(e.target.value))} />
+                </div>
+              </div>
+              <textarea className="field" placeholder="Sleep notes" rows={2} value={sleepNote} onChange={(e) => setSleepNote(e.target.value)} style={{ marginBottom: 12 }} />
+              {sleepLoading ? <div className="skeleton" style={{ height: 40 }} /> : (
+                <button className="btn-primary" onClick={() => sleepMutation.mutate()} disabled={sleepMutation.isPending}
+                  style={{ background: 'linear-gradient(135deg, var(--life), #60a4d4)' }}>
+                  {sleepMutation.isPending ? 'Logging' : 'Log Sleep'}
+                </button>
+              )}
+            </div>
+
+            {/* Water */}
+            <div style={{ marginTop: 16 }}>
+              <WaterTracker consumed={waterConsumed} onAdd={() => updateWater(1)} onRemove={() => updateWater(-1)} />
+            </div>
           </motion.div>
         )}
 
-        {/* 30-day Mood chart */}
-        {moodChartData.length >= 2 && (
-          <div className="card" style={{ marginBottom: 24 }}>
-            <p className="section-label" style={{ marginBottom: 16 }}>30-Day Mood Trend</p>
-            <ResponsiveContainer width="100%" height={140}>
-              <AreaChart data={moodChartData} margin={{ top: 5, right: 0, bottom: 0, left: -20 }}>
-                <defs>
-                  <linearGradient id="moodGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="var(--wellness)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--wellness)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="day" tick={{ fontSize: 9, fill: "var(--muted)" }} tickLine={false} axisLine={false} />
-                <YAxis domain={[0, 10]} tick={{ fontSize: 9, fill: "var(--muted)" }} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12 }}
-                  formatter={(v: number | undefined, n: string | undefined) => [v ?? 0, n === "mood" ? "Mood" : "Energy"] as [number, string]}
-                />
-                <Area type="monotone" dataKey="mood"   stroke="var(--wellness)"  strokeWidth={2} fill="url(#moodGrad)"   dot={false} />
-                <Area type="monotone" dataKey="energy" stroke="var(--life)"      strokeWidth={1.5} fill="none"            dot={false} strokeDasharray="4 2" />
-              </AreaChart>
-            </ResponsiveContainer>
-            <div style={{ display: "flex", gap: 16, marginTop: 8, justifyContent: "center" }}>
-              <span style={{ fontSize: 11, color: "var(--wellness)", fontWeight: 600 }}> Mood</span>
-              <span style={{ fontSize: 11, color: "var(--life)", fontWeight: 600 }}>-- Energy</span>
+        {/* FITNESS TAB */}
+        {tab === 'sleep' && (
+          <motion.div key="fitness" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="card" style={{ marginBottom: 16 }}>
+              <p className="section-label">LOG EXERCISE</p>
+              <select className="field" value={exType} onChange={(e) => setExType(e.target.value)} style={{ marginTop: 12, marginBottom: 10 }}>
+                <option value="">Choose exercise type</option>
+                {['Running','Walking','Cycling','Swimming','Yoga','Weightlifting','HIIT','Sports','Other'].map((t) =>
+                  <option key={t} value={t.toLowerCase()}>{t}</option>
+                )}
+              </select>
+              <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+                <input className="field" type="number" placeholder="Duration (min)" value={exDur} onChange={(e) => setExDur(e.target.value)} style={{ flex: 1 }} />
+                <input className="field" type="number" placeholder="Calories (opt)" value={exCal} onChange={(e) => setExCal(e.target.value)} style={{ flex: 1 }} />
+              </div>
+              <button className="btn-primary" onClick={() => exerciseMutation.mutate()} disabled={exerciseMutation.isPending || !exType || !exDur}>
+                {exerciseMutation.isPending ? 'Logging' : ' Log Exercise'}
+              </button>
             </div>
-          </div>
+          </motion.div>
         )}
 
-        {/* 14-day Sleep chart */}
-        {sleepChartData.length >= 2 && (
-          <div className="card" style={{ marginBottom: 24 }}>
-            <p className="section-label" style={{ marginBottom: 16 }}>14-Day Sleep</p>
-            <ResponsiveContainer width="100%" height={120}>
-              <BarChart data={sleepChartData} barCategoryGap="25%" margin={{ top: 5, right: 0, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 9, fill: "var(--muted)" }} tickLine={false} axisLine={false} />
-                <YAxis domain={[0, 12]} tick={{ fontSize: 9, fill: "var(--muted)" }} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12 }} formatter={(v: number | undefined) => [`${v ?? 0}h`, "Hours"]} />
-                <Bar dataKey="hours" fill="var(--life)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-
-        {/* Recent mood list */}
-        <p className="section-label">Recent Logs</p>
-        {moodLoading ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {[1,2,3].map((k) => <div key={k} className="card"><Skeleton h={52} /></div>)}
-          </div>
-        ) : moodData.length === 0 ? (
-          <div className="empty-state">
-            <div className="emoji"></div>
-            <p>No mood logs yet. Start tracking!</p>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {moodData.slice(0, 10).map((entry, i) => (
-              <motion.div key={entry.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }} className="card" style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
-                <span style={{ fontSize: 26 }}>{MOOD_EMOJIS[entry.mood_score - 1]}</span>
-                <div style={{ flex: 1 }}>
-                  <div className="flex justify-between">
-                    <p style={{ fontSize: 14, fontWeight: 700 }}>Mood {entry.mood_score}/10</p>
-                    <p style={{ fontSize: 11, color: "var(--muted)" }}>
-                      {new Date(entry.recorded_at ?? entry.created_at ?? "").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                    </p>
-                  </div>
-                  {entry.note && <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>{entry.note}</p>}
-                  <div style={{ height: 3, background: "var(--border)", borderRadius: 2, marginTop: 8 }}>
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${entry.mood_score * 10}%` }} transition={{ duration: 0.5, delay: i * 0.04 }} style={{ height: "100%", background: "var(--wellness)", borderRadius: 2 }} />
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-
-        {/* Sleep list */}
-        {!sleepLoading && sleepData.length > 0 && (
-          <>
-            <p className="section-label mt-24">Sleep Log</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {sleepData.slice(0, 7).map((entry, i) => (
-                <motion.div key={entry.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }} className="card" style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
-                  <span style={{ fontSize: 26 }}>{entry.hours_slept >= 7 ? "" : entry.hours_slept >= 5 ? "" : ""}</span>
-                  <div style={{ flex: 1 }}>
-                    <div className="flex justify-between">
-                      <p style={{ fontSize: 14, fontWeight: 700 }}>{entry.hours_slept}h {"".repeat(entry.quality)}</p>
-                      <p style={{ fontSize: 11, color: "var(--muted)" }}>
-                        {new Date(entry.recorded_at ?? entry.created_at ?? "").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                      </p>
-                    </div>
-                    <div style={{ height: 3, background: "var(--border)", borderRadius: 2, marginTop: 8 }}>
-                      <div style={{ height: "100%", width: `${Math.min((entry.hours_slept / 10) * 100, 100)}%`, background: "var(--life)", borderRadius: 2 }} />
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+        {/* APPOINTMENTS TAB */}
+        {tab === 'fitness' && (
+          <motion.div key="appointments" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <p className="section-label">UPCOMING APPOINTMENTS</p>
+              <button onClick={() => setShowAppt(true)}
+                style={{ padding: '8px 14px', borderRadius: 'var(--r-md)', background: 'rgba(61,170,134,0.12)', border: '1px solid rgba(61,170,134,0.25)', color: 'var(--wellness)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                + Add
+              </button>
             </div>
-          </>
+            {appointments.length === 0 ? (
+              <div className="empty-state" style={{ padding: '30px 0' }}>
+                <div className="emoji"></div>
+                <p>No appointments scheduled</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {appointments.map((a) => (
+                  <div key={a.id} className="card card-hover" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 28 }}></span>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontWeight: 700, fontSize: 14 }}>{a.title}</p>
+                      {a.doctor && <p style={{ fontSize: 12, color: 'var(--muted)' }}>Dr. {a.doctor}</p>}
+                      <p style={{ fontSize: 12, color: 'var(--wellness)' }}>{a.date} at {a.time}</p>
+                    </div>
+                    <button className="btn-icon" onClick={() => setDeleteApptId(a.id)} style={{ color: 'var(--journal)' }}></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
         )}
-      </motion.div>
+      </AnimatePresence>
+
+      {/* Add appointment sheet */}
+      <AnimatePresence>
+        {showAppt && (
+          <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={(e) => e.target === e.currentTarget && setShowAppt(false)}>
+            <motion.div className="modal-sheet" initial={{ y: 400 }} animate={{ y: 0 }} exit={{ y: 400 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}>
+              <div className="modal-handle" />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700 }}>New Appointment</h3>
+                <button className="btn-icon" onClick={() => setShowAppt(false)}></button>
+              </div>
+              <input className="field" placeholder="Appointment title*" value={apptTitle} onChange={(e) => setApptTitle(e.target.value)} style={{ marginBottom: 10 }} />
+              <input className="field" placeholder="Doctor name (optional)" value={apptDoctor} onChange={(e) => setApptDoctor(e.target.value)} style={{ marginBottom: 10 }} />
+              <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+                <input type="date" className="field" value={apptDate} onChange={(e) => setApptDate(e.target.value)} style={{ flex: 1 }} />
+                <input type="time" className="field" value={apptTime} onChange={(e) => setApptTime(e.target.value)} style={{ flex: 1 }} />
+              </div>
+              <button className="btn-primary" onClick={() => apptMutation.mutate()} disabled={apptMutation.isPending || !apptTitle || !apptDate || !apptTime}>
+                {apptMutation.isPending ? 'Saving' : 'Save Appointment'}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
-        {activeSheet === "mood"  && <MoodSheet  onClose={() => setActiveSheet(null)} />}
-        {activeSheet === "sleep" && <SleepSheet onClose={() => setActiveSheet(null)} />}
+        {deleteApptId && (
+          <ConfirmModal title="Remove Appointment" message="This appointment will be deleted." confirmText="Remove" danger
+            onConfirm={() => deleteApptId && deleteApptMutation.mutate(deleteApptId)}
+            onCancel={() => setDeleteApptId(null)} />
+        )}
       </AnimatePresence>
-    </>
+    </motion.div>
   );
 }

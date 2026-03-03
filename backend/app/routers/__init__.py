@@ -6,6 +6,7 @@ from app.routers.tasks import router as tasks_router
 from app.routers.vault import router as vault_router
 from app.routers.journal import router as journal_router
 from app.routers.ai_chat import router as ai_chat_router
+from app.routers.health import router as health_router
 
 __all__ = [
     "auth_router",
@@ -15,4 +16,5 @@ __all__ = [
     "vault_router",
     "journal_router",
     "ai_chat_router",
+    "health_router",
 ]

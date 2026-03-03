@@ -1,485 +1,373 @@
-/**
- * Journal — AI-prompted writing, past entries, and Time Capsule.
- */
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { useAppStore } from '../store/appStore';
 import type { JournalEntry } from '../store/appStore';
+import ConfirmModal from '../components/ConfirmModal';
 
-const pageVariants = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0  },
-  exit:    { opacity: 0, y: -8 },
-};
+const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
 
-type Tab = 'write' | 'entries' | 'capsule';
+const MOODS = ['','','','','','','',''];
+const CATS  = ['reflection','gratitude','goals','memories','emotions','growth'];
+const MOOD_COLORS = ['#c4607a','#c47a60','#6b7280','#3daa86','#3daa86','#e2b96a','#7b6fda','#7b6fda'];
 
-/* ── Time capsule type ───────────────────────────────────────────────────── */
-interface TimeCapsule {
-  id:          string;
-  message:     string;
-  open_date:   string;
-  is_opened:   boolean;
-  created_at:  string;
-}
-
-/* ── Write panel ─────────────────────────────────────────────────────────── */
-function WritePanel() {
-  const qc = useQueryClient();
-  const [text,      setText]      = useState('');
-  const [submitted, setSubmitted] = useState(false);
-
-  /* Fetch AI journal prompt */
-  const { data: promptData, isLoading: promptLoading, refetch: newPrompt } = useQuery<{ prompt: string }>({
-    queryKey: ['journal-prompt'],
-    queryFn:  () => api.get('/journal/prompt').then((r) => r.data),
-    staleTime: 1000 * 60 * 60, // 1 hour
-    retry: false,
-  });
-
-  const saveMutation = useMutation({
-    mutationFn: () =>
-      api.post('/journal', {
-        content:    text,
-        ai_prompt:  promptData?.prompt,
-      }).then((r) => r.data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['journal-entries'] });
-      setSubmitted(true);
-      setText('');
-    },
-  });
-
-  if (submitted) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        style={{ textAlign: 'center', padding: '48px 24px' }}
-      >
-        <p style={{ fontSize: 64 }}>💜</p>
-        <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 16 }}>Entry saved!</h2>
-        <p style={{ fontSize: 14, color: 'var(--muted)', marginTop: 8 }}>
-          Your reflection has been added to your journal.
-        </p>
-        <button
-          onClick={() => setSubmitted(false)}
-          className="btn-ghost"
-          style={{ marginTop: 24 }}
-        >
-          Write another entry
-        </button>
-      </motion.div>
-    );
-  }
-
+function Skel() {
   return (
-    <div>
-      {/* AI Prompt card */}
-      <div
-        className="card mb-16"
-        style={{
-          background: 'linear-gradient(135deg, var(--journal-light), #fff8fa)',
-          border: '1px solid rgba(196,96,122,0.15)',
-        }}
-      >
-        <div className="flex justify-between items-center mb-8">
-          <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--journal)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            ✨ Today's Prompt
-          </p>
-          <button
-            onClick={() => newPrompt()}
-            style={{ fontSize: 12, fontWeight: 600, color: 'var(--journal)', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            New prompt ↺
-          </button>
-        </div>
-        {promptLoading ? (
-          <div style={{ display: 'flex', gap: 4, padding: '4px 0' }}>
-            {[0,1,2].map((i) => (
-              <motion.div key={i} animate={{ opacity: [0.3,1,0.3] }} transition={{ repeat: Infinity, duration: 1.2, delay: i*0.2 }}
-                style={{ width: 6, height: 6, background: 'var(--journal)', borderRadius: '50%' }} />
-            ))}
-          </div>
-        ) : (
-          <p style={{ fontSize: 15, lineHeight: 1.6, color: 'var(--text)', fontStyle: 'italic' }}>
-            "{promptData?.prompt ?? 'What are three things you\'re grateful for today?'}"
-          </p>
-        )}
-      </div>
-
-      {/* Write area */}
-      <textarea
-        className="field"
-        placeholder="Start writing… let your thoughts flow freely."
-        rows={10}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        style={{ marginBottom: 14, lineHeight: 1.7 }}
-        autoFocus
-      />
-
-      {/* Character count */}
-      <p style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'right', marginBottom: 12 }}>
-        {text.length} characters
-      </p>
-
-      <button
-        className="btn-primary"
-        onClick={() => saveMutation.mutate()}
-        disabled={saveMutation.isPending || text.trim().length < 10}
-        style={{ background: 'var(--journal)', boxShadow: '0 4px 16px rgba(196,96,122,0.35)' }}
-      >
-        {saveMutation.isPending ? 'Saving…' : '💾 Save Entry'}
-      </button>
+    <div className="card" style={{ opacity: 0.7, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="skeleton" style={{ height: 14, width: '40%' }} />
+      <div className="skeleton" style={{ height: 12, width: '95%' }} />
+      <div className="skeleton" style={{ height: 12, width: '80%' }} />
     </div>
   );
 }
 
-/* ── Expandable entry ───────────────────────────────────────────────────── */
-function EntryCard({ entry, index }: { entry: JournalEntry; index: number }) {
-  const [expanded, setExpanded] = useState(false);
-  const isLong = entry.content.length > 180;
-  return (
-    <motion.div
-      key={entry.id}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-      className="card"
-    >
-      {entry.ai_prompt && (
-        <p style={{ fontSize: 12, color: 'var(--journal)', fontWeight: 600, marginBottom: 8, fontStyle: 'italic' }}>
-          "{entry.ai_prompt}"
-        </p>
-      )}
-      <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text)' }}>
-        {isLong && !expanded ? entry.content.slice(0, 180) + '…' : entry.content}
-      </p>
-      {isLong && (
-        <button
-          onClick={() => setExpanded(!expanded)}
-          style={{ fontSize: 12, color: 'var(--journal)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600, marginTop: 6 }}
-        >
-          {expanded ? 'Show less ↑' : 'Read more ↓'}
-        </button>
-      )}
-      <div className="flex justify-between items-center mt-12">
-        <p style={{ fontSize: 11, color: 'var(--muted)' }}>
-          {new Date(entry.created_at).toLocaleDateString('en-GB', {
-            weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
-          })}
-        </p>
-        {entry.mood_snapshot && (
-          <span style={{ fontSize: 13 }}>
-            {'😔😕😐🙂😊😄😁🤩✨🚀'[entry.mood_snapshot - 1]}
-          </span>
-        )}
-      </div>
-    </motion.div>
-  );
-}
+export default function Journal() {
+  const qc       = useQueryClient();
+  const addToast = useAppStore((s) => s.addToast);
+  const [showCard, setShowCard]   = useState(true);
+  const [promptCat, setPromptCat] = useState(CATS[Math.floor(Math.random() * CATS.length)]);
+  const [promptSeed, setPromptSeed] = useState(Math.floor(Math.random() * 99));
+  const [newContent, setNewContent] = useState('');
+  const [newMood, setNewMood]     = useState(4);
+  const [tagInput, setTagInput]   = useState('');
+  const [newTags, setNewTags]     = useState<string[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editEntry, setEditEntry] = useState<JournalEntry | null>(null);
+  const [deleteId, setDeleteId]   = useState<string | null>(null);
+  const [showTimeCapsule, setShowTimeCapsule] = useState(false);
+  const [capsuleContent, setCapsuleContent] = useState('');
+  const [capsuleDate, setCapsuleDate] = useState('');
+  const [writing, setWriting]     = useState(false);
 
-/* ── Past entries panel ──────────────────────────────────────────────────── */
-function EntriesPanel() {
+  const { data: prompt, isFetching: promptLoading } = useQuery<{ prompt: string }>({
+    queryKey: ['journal-prompt', promptCat, promptSeed],
+    queryFn:  () => api.get(`/ai/journal-prompt?category=${promptCat}&seed=${promptSeed}`).then((r) => r.data),
+    staleTime: 3_600_000,
+  });
+
   const { data: entries = [], isLoading } = useQuery<JournalEntry[]>({
-    queryKey: ['journal-entries'],
+    queryKey: ['journal'],
     queryFn:  () => api.get('/journal').then((r) => r.data),
-    staleTime: 5 * 60 * 1000, // 5 min
-  });
-
-  if (isLoading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="card" style={{ opacity: 0.6 }}>
-            <div style={{ height: 11, width: '50%', borderRadius: 6, background: 'var(--border)', marginBottom: 10, animation: 'pulse 1.4s ease infinite' }} />
-            <div style={{ height: 13, width: '95%', borderRadius: 6, background: 'var(--border)', marginBottom: 6, animation: 'pulse 1.4s ease infinite' }} />
-            <div style={{ height: 13, width: '80%', borderRadius: 6, background: 'var(--border)', marginBottom: 6, animation: 'pulse 1.4s ease infinite' }} />
-            <div style={{ height: 13, width: '60%', borderRadius: 6, background: 'var(--border)', animation: 'pulse 1.4s ease infinite' }} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (entries.length === 0) {
-    return (
-      <div className="empty-state">
-        <div className="emoji">📖</div>
-        <p>No entries yet. Write your first journal entry!</p>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {entries.map((entry, i) => <EntryCard key={entry.id} entry={entry} index={i} />)}
-    </div>
-  );
-}
-
-/* ── Time Capsule panel ──────────────────────────────────────────────────── */
-function CapsulePanel() {
-  const qc = useQueryClient();
-  const [message,    setMessage]    = useState('');
-  const [openDate,   setOpenDate]   = useState('');
-  const [showForm,   setShowForm]   = useState(false);
-  const [sealMsg,    setSealMsg]    = useState('');
-  const [sealDone,   setSealDone]   = useState(false);
-
-  const { data: capsules = [] } = useQuery<TimeCapsule[]>({
-    queryKey: ['time-capsules'],
-    queryFn:  () => api.get('/journal/time-capsules').then((r) => r.data),
-    staleTime: 10 * 60 * 1000, // 10 min — capsules rarely change
+    staleTime: 30_000,
   });
 
   const createMutation = useMutation({
-    mutationFn: async () => {
-      const capsule = await api.post('/journal/time-capsule', { message, open_date: openDate }).then((r) => r.data);
-      try {
-        const dateStr = new Date(openDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-        const aiRes = await api.post('/ai/chat', {
-          message: `Generate a brief, poetic 1-2 sentence "sealing message" for a time capsule that opens on ${dateStr}. The message starts with something like "Until ${dateStr}..." Be warm and mystical.`,
-        });
-        setSealMsg(aiRes.data.response as string);
-      } catch { /* non-critical */ }
-      return capsule;
-    },
+    mutationFn: () => api.post('/journal', { content: newContent, mood: newMood, tags: newTags }).then((r) => r.data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['time-capsules'] });
-      setMessage('');
-      setOpenDate('');
-      setShowForm(false);
-      setSealDone(true);
+      qc.invalidateQueries({ queryKey: ['journal'] });
+      addToast('success', 'Entry saved ');
+      setNewContent(''); setNewTags([]); setWriting(false);
     },
+    onError: () => addToast('error', 'Failed to save entry'),
   });
 
-  const now = new Date();
+  const updateMutation = useMutation({
+    mutationFn: () => api.put(`/journal/${editEntry!.id}`, { content: editEntry!.content, mood: editEntry!.mood, tags: editEntry!.tags }).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['journal'] }); addToast('success', 'Updated '); setEditEntry(null); },
+    onError: () => addToast('error', 'Failed to update'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/journal/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['journal'] }); addToast('success', 'Entry deleted'); setDeleteId(null); },
+    onError: () => addToast('error', 'Failed to delete'),
+  });
+
+  const capsuleMutation = useMutation({
+    mutationFn: () => api.post('/journal/time-capsule', { content: capsuleContent, open_at: capsuleDate }).then((r) => r.data),
+    onSuccess: () => { addToast('success', 'Time capsule sealed! '); setCapsuleContent(''); setCapsuleDate(''); setShowTimeCapsule(false); },
+    onError: () => addToast('error', 'Failed to seal capsule'),
+  });
+
+  function addTag() {
+    const t = tagInput.trim().toLowerCase();
+    if (t && !newTags.includes(t)) setNewTags([...newTags, t]);
+    setTagInput('');
+  }
+
+  function regeneratePrompt() {
+    setPromptCat(CATS[Math.floor(Math.random() * CATS.length)]);
+    setPromptSeed(Math.floor(Math.random() * 99));
+  }
+
+  function usePrompt() {
+    if (prompt?.prompt) {
+      setNewContent(prompt.prompt + '\n\n');
+      setWriting(true);
+      setShowCard(false);
+    }
+  }
 
   return (
-    <div>
-      {/* Header card */}
-      <div
-        className="card mb-20"
-        style={{ background: 'linear-gradient(135deg, #1a1a2e, #2d2d4e)', color: '#fff', textAlign: 'center', padding: '28px 20px' }}
-      >
-        <p style={{ fontSize: 40 }}>⏳</p>
-        <h3 style={{ fontSize: 18, fontWeight: 700, marginTop: 12 }}>Time Capsules</h3>
-        <p style={{ fontSize: 13, opacity: 0.7, marginTop: 4 }}>
-          Write a message to your future self.
-        </p>
+    <motion.div {...PAGE} className="page">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>Journal</h1>
+          <p style={{ fontSize: 13, color: 'var(--muted)' }}>{entries.length} entries written</p>
+        </div>
+        <motion.button whileTap={{ scale: 0.92 }} className="fab"
+          onClick={() => setWriting(true)}
+          style={{ background: 'linear-gradient(135deg, var(--journal), #e07a8a)' }}>
+          +
+        </motion.button>
       </div>
 
-      {/* Seal success banner */}
+      {/* AI Prompt Card */}
       <AnimatePresence>
-        {sealDone && (
+        {showCard && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="card mb-16"
-            style={{ background: 'var(--journal-light)', borderLeft: '4px solid var(--journal)', textAlign: 'center' }}
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+            className="card"
+            style={{ background: 'linear-gradient(135deg, rgba(196,96,122,0.15), rgba(196,96,122,0.05))', borderColor: 'rgba(196,96,122,0.25)', marginBottom: 20 }}
           >
-            <p style={{ fontSize: 28, marginBottom: 8 }}>⏳✨</p>
-            <p style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>Capsule sealed!</p>
-            {sealMsg && <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--journal)', fontStyle: 'italic' }}>{sealMsg}</p>}
-            <button
-              onClick={() => { setSealDone(false); setSealMsg(''); }}
-              style={{ marginTop: 12, fontSize: 12, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-            >
-              Dismiss
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <p className="section-label"> TODAY'S PROMPT</p>
+              <button className="btn-icon" onClick={() => setShowCard(false)} style={{ width: 24, height: 24, fontSize: 11 }}></button>
+            </div>
+            {promptLoading ? (
+              <div className="skeleton" style={{ height: 40, marginBottom: 10 }} />
+            ) : (
+              <p style={{ fontSize: 15, lineHeight: 1.6, fontFamily: 'var(--font-display)', fontStyle: 'italic', marginBottom: 12 }}>
+                "{prompt?.prompt ?? 'What are you feeling grateful for today?'}"
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn-secondary" onClick={regeneratePrompt} style={{ flex: 1, fontSize: 12 }}> New Prompt</button>
+              <button
+                onClick={usePrompt}
+                style={{ flex: 2, padding: '10px', borderRadius: 'var(--r-md)', background: 'var(--journal)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+              >
+                Write Now
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Create form */}
-      {showForm ? (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="card mb-20"
-        >
-          <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 14 }}>Write to Future You</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <textarea
-              className="field"
-              placeholder="Dear future me… write what you want to remember or share."
-              rows={6}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>OPEN ON</p>
-              <input
-                className="field"
-                type="date"
-                value={openDate}
-                onChange={(e) => setOpenDate(e.target.value)}
-                min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
-              />
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={() => setShowForm(false)}
-                style={{ flex: 1, padding: '14px', borderRadius: 'var(--r-md)', background: 'var(--bg)', border: 'none', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn-primary"
-                onClick={() => createMutation.mutate()}
-                disabled={createMutation.isPending || !message.trim() || !openDate}
-                style={{ flex: 2, background: 'var(--journal)', boxShadow: '0 4px 14px rgba(196,96,122,0.3)' }}
-              >
-                {createMutation.isPending ? 'Sealing…' : '⏳ Seal Capsule'}
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      ) : (
-        <button
-          onClick={() => setShowForm(true)}
-          style={{
-            width: '100%',
-            padding: '16px',
-            borderRadius: 'var(--r-lg)',
-            border: '2px dashed rgba(196,96,122,0.3)',
-            background: 'var(--journal-light)',
-            color: 'var(--journal)',
-            fontSize: 15,
-            fontWeight: 700,
-            cursor: 'pointer',
-            marginBottom: 20,
-          }}
-        >
-          + Create Time Capsule
-        </button>
-      )}
+      {/* Time Capsule CTA */}
+      <button
+        onClick={() => setShowTimeCapsule(true)}
+        className="card card-hover"
+        style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, textAlign: 'left', cursor: 'pointer', background: 'rgba(226,185,106,0.08)', borderColor: 'rgba(226,185,106,0.2)' }}
+      >
+        <span style={{ fontSize: 28 }}></span>
+        <div>
+          <p style={{ fontWeight: 700, fontSize: 14 }}>Seal a Time Capsule</p>
+          <p style={{ fontSize: 12, color: 'var(--muted)' }}>Write a letter to your future self</p>
+        </div>
+        <span style={{ marginLeft: 'auto', color: 'var(--muted)' }}></span>
+      </button>
 
-      {/* Capsules list */}
-      {capsules.length === 0 ? (
+      {/* Journal entries */}
+      {isLoading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {[1,2,3].map((i) => <Skel key={i} />)}
+        </div>
+      ) : entries.length === 0 ? (
         <div className="empty-state">
-          <div className="emoji">⏳</div>
-          <p>No capsules yet. Write a letter to your future self!</p>
+          <div className="emoji"></div>
+          <p>No entries yet</p>
+          <p style={{ fontSize: 13, marginTop: 6 }}>Start writing your first journal entry</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {capsules.map((cap, i) => {
-            const openDate = new Date(cap.open_date);
-            const canOpen  = now >= openDate;
-            return (
-              <motion.div
-                key={cap.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: i * 0.06 }}
-                className="card"
-                style={{ background: canOpen ? 'var(--journal-light)' : '#f8f7f4' }}
-              >
-                <div className="flex justify-between items-center mb-8">
-                  <p style={{ fontSize: 13, fontWeight: 700, color: canOpen ? 'var(--journal)' : 'var(--muted)' }}>
-                    {canOpen ? '📬 Ready to open!' : '🔒 Sealed'}
-                  </p>
-                  <p style={{ fontSize: 12, color: 'var(--muted)' }}>
-                    Opens {openDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </p>
+          {entries.map((entry, i) => (
+            <motion.div
+              key={entry.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+              className="card"
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 22 }}>{MOODS[Math.min((entry.mood ?? 1) - 1, 7)] ?? ''}</span>
+                  <div>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: MOOD_COLORS[Math.min((entry.mood ?? 1) - 1, 7)] }}>
+                      Mood {entry.mood ?? ''}/8
+                    </p>
+                    <p style={{ fontSize: 11, color: 'var(--muted)' }}>
+                      {new Date(entry.created_at).toLocaleDateString('en', { day: 'numeric', month: 'short' })}
+                    </p>
+                  </div>
                 </div>
-                {canOpen && cap.is_opened ? (
-                  <p style={{ fontSize: 14, lineHeight: 1.6 }}>{cap.message}</p>
-                ) : canOpen ? (
-                  <p style={{ fontSize: 14, color: 'var(--journal)', fontStyle: 'italic' }}>
-                    Tap to open your capsule…
-                  </p>
-                ) : (
-                  <p style={{ fontSize: 14, color: 'var(--muted)', fontStyle: 'italic' }}>
-                    This message is waiting for {openDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                )}
-                <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
-                  Written {new Date(cap.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </p>
-              </motion.div>
-            );
-          })}
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button className="btn-icon" onClick={() => setEditEntry({ ...entry })} style={{ width: 30, height: 30, fontSize: 12 }}></button>
+                  <button className="btn-icon" onClick={() => setDeleteId(entry.id)} style={{ width: 30, height: 30, fontSize: 12, color: 'var(--journal)' }}></button>
+                </div>
+              </div>
+
+              <p style={{
+                fontSize: 14, lineHeight: 1.6, marginTop: 10, color: 'var(--text2)',
+                display: expandedId === entry.id ? 'block' : '-webkit-box',
+                WebkitLineClamp: expandedId === entry.id ? undefined : 3,
+                WebkitBoxOrient: 'vertical' as const,
+                overflow: expandedId === entry.id ? 'visible' : 'hidden',
+              }}>
+                {entry.content}
+              </p>
+
+              {entry.content.length > 150 && (
+                <button
+                  onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
+                  style={{ background: 'none', border: 'none', color: 'var(--journal)', fontSize: 12, fontWeight: 600, cursor: 'pointer', marginTop: 6, padding: 0 }}
+                >
+                  {expandedId === entry.id ? 'Show less ' : 'Read more '}
+                </button>
+              )}
+
+              {entry.tags && entry.tags.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+                  {entry.tags.map((t) => <span key={t} className="chip" style={{ fontSize: 11, padding: '3px 8px' }}>#{t}</span>)}
+                </div>
+              )}
+            </motion.div>
+          ))}
         </div>
       )}
-    </div>
-  );
-}
 
-/* ── Page ────────────────────────────────────────────────────────────────── */
-export default function Journal() {
-  const [activeTab, setActiveTab] = useState<Tab>('write');
+      {/* New Entry Sheet */}
+      <AnimatePresence>
+        {writing && (
+          <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={(e) => e.target === e.currentTarget && setWriting(false)}>
+            <motion.div className="modal-sheet" initial={{ y: 600 }} animate={{ y: 0 }} exit={{ y: 600 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}>
+              <div className="modal-handle" />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700 }}>New Entry</h3>
+                <button className="btn-icon" onClick={() => setWriting(false)}></button>
+              </div>
+              {!showCard && (
+                <button onClick={() => setShowCard(true)} className="btn-ghost" style={{ fontSize: 12, marginBottom: 10, padding: '6px 10px' }}> Use AI Prompt</button>
+              )}
+              <textarea
+                className="field"
+                placeholder="What's on your mind today?"
+                rows={6}
+                value={newContent}
+                onChange={(e) => setNewContent(e.target.value)}
+                style={{ marginBottom: 12 }}
+                autoFocus
+              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <p style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>MOOD:</p>
+                {MOODS.map((em, i) => (
+                  <button key={i} onClick={() => setNewMood(i + 1)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, opacity: newMood === i + 1 ? 1 : 0.35, transform: newMood === i + 1 ? 'scale(1.3)' : 'scale(1)', transition: 'all 0.15s' }}>
+                    {em}
+                  </button>
+                ))}
+              </div>
+              {/* Tags */}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
+                {newTags.map((t) => (
+                  <span key={t} className="chip">
+                    #{t}
+                    <button onClick={() => setNewTags(newTags.filter((tg) => tg !== t))} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 11, padding: 0, marginLeft: 2 }}></button>
+                  </span>
+                ))}
+                <input
+                  value={tagInput} onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); } }}
+                  placeholder="Tag + Enter"
+                  style={{ border: 'none', background: 'none', color: 'var(--text)', fontSize: 13, outline: 'none', flex: 1, minWidth: 80 }}
+                />
+              </div>
+              <button
+                className="btn-primary"
+                onClick={() => newContent.trim() && createMutation.mutate()}
+                disabled={createMutation.isPending || !newContent.trim()}
+                style={{ background: 'linear-gradient(135deg, var(--journal), #e07a8a)' }}
+              >
+                {createMutation.isPending ? 'Saving' : 'Save Entry'}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-  const tabs: { id: Tab; label: string; emoji: string }[] = [
-    { id: 'write',   label: 'Write',   emoji: '✍️'  },
-    { id: 'entries', label: 'Entries', emoji: '📖'  },
-    { id: 'capsule', label: 'Capsule', emoji: '⏳'  },
-  ];
+      {/* Edit Sheet */}
+      <AnimatePresence>
+        {editEntry && (
+          <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={(e) => e.target === e.currentTarget && setEditEntry(null)}>
+            <motion.div className="modal-sheet" initial={{ y: 600 }} animate={{ y: 0 }} exit={{ y: 600 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}>
+              <div className="modal-handle" />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700 }}>Edit Entry</h3>
+                <button className="btn-icon" onClick={() => setEditEntry(null)}></button>
+              </div>
+              <textarea className="field" rows={6} value={editEntry.content} onChange={(e) => setEditEntry({ ...editEntry, content: e.target.value })} style={{ marginBottom: 14 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                {MOODS.map((em, i) => (
+                  <button key={i} onClick={() => setEditEntry({ ...editEntry, mood: i + 1 })}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, opacity: editEntry.mood === i + 1 ? 1 : 0.35, transform: editEntry.mood === i + 1 ? 'scale(1.3)' : 'scale(1)', transition: 'all 0.15s' }}>
+                    {em}
+                  </button>
+                ))}
+              </div>
+              <button className="btn-primary" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}
+                style={{ background: 'linear-gradient(135deg, var(--journal), #e07a8a)' }}>
+                {updateMutation.isPending ? 'Updating' : 'Update Entry'}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-  return (
-    <motion.div
-      variants={pageVariants}
-      initial="initial" animate="animate" exit="exit"
-      transition={{ duration: 0.35 }}
-      className="page"
-    >
-      {/* Header */}
-      <p style={{ fontSize: 13, color: 'var(--journal)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-        📖 Journal
-      </p>
-      <h1 style={{ fontSize: 24, fontWeight: 800, marginTop: 2, marginBottom: 20 }}>Your Reflections</h1>
+      {/* Time Capsule Sheet */}
+      <AnimatePresence>
+        {showTimeCapsule && (
+          <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={(e) => e.target === e.currentTarget && setShowTimeCapsule(false)}>
+            <motion.div className="modal-sheet" initial={{ y: 400 }} animate={{ y: 0 }} exit={{ y: 400 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}>
+              <div className="modal-handle" />
+              <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                <span style={{ fontSize: 40 }}></span>
+                <h3 style={{ fontSize: 18, fontWeight: 700, marginTop: 8 }}>Seal a Time Capsule</h3>
+                <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>Write a letter to your future self</p>
+              </div>
+              <textarea className="field" placeholder="Dear future me" rows={5} value={capsuleContent}
+                onChange={(e) => setCapsuleContent(e.target.value)} style={{ marginBottom: 12 }} />
+              <div style={{ marginBottom: 16 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>UNLOCK DATE</p>
+                <input
+                  type="date"
+                  className="field"
+                  value={capsuleDate}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => setCapsuleDate(e.target.value)}
+                />
+              </div>
+              <button
+                className="btn-primary"
+                onClick={() => capsuleContent.trim() && capsuleDate && capsuleMutation.mutate()}
+                disabled={capsuleMutation.isPending || !capsuleContent.trim() || !capsuleDate}
+                style={{ background: 'linear-gradient(135deg, #e2b96a, #d4864a)' }}
+              >
+                {capsuleMutation.isPending ? 'Sealing' : ' Seal Capsule'}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Tab bar */}
-      <div
-        style={{
-          display: 'flex',
-          background: 'var(--surface)',
-          borderRadius: 'var(--r-md)',
-          padding: 4,
-          gap: 4,
-          marginBottom: 24,
-          boxShadow: 'var(--shadow-sm)',
-        }}
-      >
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              flex: 1,
-              padding: '10px 4px',
-              borderRadius: 12,
-              border: 'none',
-              background: activeTab === tab.id ? 'var(--journal)' : 'transparent',
-              color: activeTab === tab.id ? '#fff' : 'var(--muted)',
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
-            {tab.emoji} {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2 }}
-        >
-          {activeTab === 'write'   && <WritePanel   />}
-          {activeTab === 'entries' && <EntriesPanel />}
-          {activeTab === 'capsule' && <CapsulePanel />}
-        </motion.div>
+      {/* Delete confirm */}
+      <AnimatePresence>
+        {deleteId && (
+          <ConfirmModal
+            title="Delete Entry"
+            message="This journal entry will be permanently deleted."
+            confirmText="Delete"
+            danger
+            onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
+            onCancel={() => setDeleteId(null)}
+          />
+        )}
       </AnimatePresence>
     </motion.div>
   );

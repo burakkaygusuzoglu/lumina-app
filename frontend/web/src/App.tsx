@@ -15,6 +15,9 @@ const Wellness = lazy(() => import('./pages/Wellness'));
 const Vault    = lazy(() => import('./pages/Vault'));
 const Life     = lazy(() => import('./pages/Life'));
 const Journal  = lazy(() => import('./pages/Journal'));
+const Health   = lazy(() => import('./pages/Health'));
+const Profile  = lazy(() => import('./pages/Profile'));
+const Settings = lazy(() => import('./pages/Settings'));
 
 export default function App() {
   return (
@@ -31,6 +34,9 @@ export default function App() {
               <Route path="/vault" element={<Vault />} />
               <Route path="/life" element={<Life />} />
               <Route path="/journal" element={<Journal />} />
+              <Route path="/health" element={<Health />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

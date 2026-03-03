@@ -151,12 +151,12 @@ export default function Register() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               style={{
-                background: '#fff0f0',
-                border: '1px solid #ffd0d0',
+                background: 'rgba(196,96,122,0.12)',
+                border: '1px solid rgba(196,96,122,0.35)',
                 borderRadius: 'var(--r-sm)',
                 padding: '10px 14px',
                 fontSize: 13,
-                color: '#c0392b',
+                color: 'var(--journal)',
                 fontWeight: 500,
               }}
             >
