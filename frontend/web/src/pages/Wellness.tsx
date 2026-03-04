@@ -78,12 +78,12 @@ export default function Wellness() {
 
   const { data: moods = [], isLoading: moodsLoading } = useQuery<MoodEntry[]>({
     queryKey: ['moods'],
-    queryFn:  () => api.get('/wellness/mood').then((r) => r.data),
+    queryFn:  () => api.get('/wellness/mood/history').then((r) => r.data),
     staleTime: 60_000,
   });
-  const { data: sleepLogs = [], isLoading: sleepLoading } = useQuery<SleepEntry[]>({
+  const { data: sleepLogs = [] } = useQuery<SleepEntry[]>({
     queryKey: ['sleep'],
-    queryFn:  () => api.get('/wellness/sleep').then((r) => r.data),
+    queryFn:  () => api.get('/wellness/sleep/history').then((r) => r.data),
     staleTime: 60_000,
   });
   const { data: appointments = [] } = useQuery<{ id: string; title: string; date: string; time: string; doctor?: string }[]>({
@@ -111,13 +111,13 @@ export default function Wellness() {
   });
 
   const apptMutation = useMutation({
-    mutationFn: () => api.post('/wellness/appointments', { title: apptTitle, date: apptDate, time: apptTime, doctor: apptDoctor || undefined }).then((r) => r.data),
+    mutationFn: () => api.post('/wellness/appointment', { title: apptTitle, date: apptDate, time: apptTime, doctor: apptDoctor || undefined }).then((r) => r.data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['appointments'] }); addToast('success', 'Appointment saved '); setShowAppt(false); setApptTitle(''); setApptDate(''); setApptTime(''); setApptDoctor(''); },
     onError:   () => addToast('error', 'Failed to save appointment'),
   });
 
   const deleteApptMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/wellness/appointments/${id}`),
+    mutationFn: (id: string) => api.delete(`/wellness/appointment/${id}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['appointments'] }); addToast('success', 'Appointment removed'); setDeleteApptId(null); },
     onError:   () => addToast('error', 'Failed to delete'),
   });
@@ -172,7 +172,7 @@ export default function Wellness() {
         {(['mood','sleep','fitness'] as const).map((t, ti) => (
           <button key={t} onClick={() => setTab(t)}
             className={`tab-item${tab === t ? ' active' : ''}`}>
-            {['💚 Mood','🏃 Fitness','📋 Appts'][ti]}
+            {['💚 Mood','😴 Sleep','🏃 Fitness'][ti]}
           </button>
         ))}
       </div>
@@ -215,28 +215,6 @@ export default function Wellness() {
               </button>
             </div>
 
-            {/* Sleep log */}
-            <div className="card">
-              <p className="section-label">LOG SLEEP</p>
-              <div style={{ display: 'flex', gap: 10, marginTop: 12, marginBottom: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Hours</p>
-                  <input className="field" type="number" step="0.5" min="0" max="24" value={sleepHours} onChange={(e) => setSleepHours(e.target.value)} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Quality (110)</p>
-                  <input className="field" type="number" min="1" max="10" value={sleepQuality} onChange={(e) => setSleepQuality(Number(e.target.value))} />
-                </div>
-              </div>
-              <textarea className="field" placeholder="Sleep notes" rows={2} value={sleepNote} onChange={(e) => setSleepNote(e.target.value)} style={{ marginBottom: 12 }} />
-              {sleepLoading ? <div className="skeleton" style={{ height: 40 }} /> : (
-                <button className="btn-primary" onClick={() => sleepMutation.mutate()} disabled={sleepMutation.isPending}
-                  style={{ background: 'linear-gradient(135deg, var(--life), #60a4d4)' }}>
-                  {sleepMutation.isPending ? 'Logging' : 'Log Sleep'}
-                </button>
-              )}
-            </div>
-
             {/* Water */}
             <div style={{ marginTop: 16 }}>
               <WaterTracker consumed={waterConsumed} onAdd={() => updateWater(1)} onRemove={() => updateWater(-1)} />
@@ -244,9 +222,54 @@ export default function Wellness() {
           </motion.div>
         )}
 
-        {/* FITNESS TAB */}
+        {/* SLEEP TAB */}
         {tab === 'sleep' && (
-          <motion.div key="fitness" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div key="sleep" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="card" style={{ marginBottom: 16 }}>
+              <p className="section-label">LOG SLEEP</p>
+              <div style={{ display: 'flex', gap: 10, marginTop: 12, marginBottom: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Hours</p>
+                  <input className="field" type="number" step="0.5" min="0" max="24" value={sleepHours} onChange={(e) => setSleepHours(e.target.value)} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Quality (1–10)</p>
+                  <input className="field" type="number" min="1" max="10" value={sleepQuality} onChange={(e) => setSleepQuality(Number(e.target.value))} />
+                </div>
+              </div>
+              <textarea className="field" placeholder="Sleep notes (optional)" rows={2} value={sleepNote} onChange={(e) => setSleepNote(e.target.value)} style={{ marginBottom: 12 }} />
+              <button className="btn-primary" onClick={() => sleepMutation.mutate()} disabled={sleepMutation.isPending}
+                style={{ background: 'linear-gradient(135deg, var(--life), #60a4d4)' }}>
+                {sleepMutation.isPending ? 'Logging…' : '😴 Log Sleep'}
+              </button>
+            </div>
+            {sleepLogs.length > 0 && (
+              <div className="card">
+                <p className="section-label" style={{ marginBottom: 10 }}>RECENT SLEEP</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {sleepLogs.slice(0, 5).map((s) => (
+                    <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600 }}>{(s.hours_slept ?? s.hours ?? 0).toFixed(1)} hours</p>
+                        <p style={{ fontSize: 11, color: 'var(--muted)' }}>{new Date(s.created_at).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: s.quality >= 7 ? 'var(--wellness)' : s.quality >= 5 ? 'var(--life)' : 'var(--journal)', background: s.quality >= 7 ? 'rgba(61,170,134,0.12)' : 'rgba(196,96,122,0.12)', padding: '2px 8px', borderRadius: 10 }}>
+                          Q: {s.quality}/10
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* APPOINTMENTS TAB */}
+        {tab === 'fitness' && (
+          <motion.div key="appointments" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            {/* Exercise log */}
             <div className="card" style={{ marginBottom: 16 }}>
               <p className="section-label">LOG EXERCISE</p>
               <select className="field" value={exType} onChange={(e) => setExType(e.target.value)} style={{ marginTop: 12, marginBottom: 10 }}>
@@ -260,15 +283,9 @@ export default function Wellness() {
                 <input className="field" type="number" placeholder="Calories (opt)" value={exCal} onChange={(e) => setExCal(e.target.value)} style={{ flex: 1 }} />
               </div>
               <button className="btn-primary" onClick={() => exerciseMutation.mutate()} disabled={exerciseMutation.isPending || !exType || !exDur}>
-                {exerciseMutation.isPending ? 'Logging' : ' Log Exercise'}
+                {exerciseMutation.isPending ? 'Logging…' : '🏃 Log Exercise'}
               </button>
             </div>
-          </motion.div>
-        )}
-
-        {/* APPOINTMENTS TAB */}
-        {tab === 'fitness' && (
-          <motion.div key="appointments" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <p className="section-label">UPCOMING APPOINTMENTS</p>
               <button onClick={() => setShowAppt(true)}

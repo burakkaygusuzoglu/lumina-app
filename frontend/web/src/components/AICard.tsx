@@ -1,5 +1,5 @@
 /**
- * AICard — animated gradient card displaying an AI insight or pulse message.
+ * AICard — animated premium gradient card displaying an AI insight or pulse message.
  */
 import { motion } from 'framer-motion';
 
@@ -8,19 +8,6 @@ interface AICardProps {
   isLoading?: boolean;
   onRefresh?: () => void;
 }
-
-/* Animated gradient orbs */
-const Orb = ({ style }: { style: React.CSSProperties }) => (
-  <div
-    style={{
-      position: 'absolute',
-      borderRadius: '50%',
-      filter: 'blur(40px)',
-      opacity: 0.35,
-      ...style,
-    }}
-  />
-);
 
 export default function AICard({ insight, isLoading, onRefresh }: AICardProps) {
   return (
@@ -31,56 +18,68 @@ export default function AICard({ insight, isLoading, onRefresh }: AICardProps) {
       style={{
         position: 'relative',
         overflow: 'hidden',
-        background: 'linear-gradient(135deg, #7b6fda 0%, #9b8fea 50%, #c4607a 100%)',
+        background: 'linear-gradient(135deg, #4a3fa8 0%, #7b6fda 40%, #b76088 75%, #d4607a 100%)',
         borderRadius: 'var(--r-xl)',
-        padding: '24px 20px',
+        padding: '22px 20px 20px',
         color: '#fff',
-        minHeight: 130,
+        minHeight: 120,
+        boxShadow: '0 8px 32px rgba(123,111,218,0.35)',
       }}
     >
-      {/* Background orbs for depth */}
-      <Orb style={{ width: 120, height: 120, background: '#fff', top: -40, right: -20 }} />
-      <Orb style={{ width: 80,  height: 80,  background: '#fde8ee', bottom: -20, left: 20 }} />
+      {/* Background noise texture orbs */}
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 80% 0%, rgba(255,255,255,0.12) 0%, transparent 60%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', top: -60, right: -40, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', width: 90, height: 90, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', bottom: -30, left: 10, pointerEvents: 'none' }} />
 
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, position: 'relative' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Header row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <motion.span
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ repeat: Infinity, duration: 2.5 }}
-            style={{ fontSize: 18 }}
+            animate={{ scale: [1, 1.25, 1], rotate: [0, 8, -8, 0] }}
+            transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+            style={{ fontSize: 17, display: 'inline-block' }}
           >
             ✨
           </motion.span>
-          <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', opacity: 0.85 }}>
+          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.9, fontFamily: 'var(--font-display)' }}>
             AI Pulse
           </span>
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#5dffc8', boxShadow: '0 0 6px #5dffc8', display: 'inline-block', marginLeft: 2 }} />
         </div>
         {onRefresh && (
-          <button
+          <motion.button
+            whileTap={{ scale: 0.9 }}
             onClick={onRefresh}
-            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+            style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: 20, padding: '4px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer', backdropFilter: 'blur(4px)' }}
           >
             Refresh
-          </button>
+          </motion.button>
         )}
       </div>
 
       {/* Insight text */}
       <div style={{ position: 'relative' }}>
         {isLoading ? (
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', paddingTop: 4 }}>
             {[0, 1, 2].map((i) => (
               <motion.div
                 key={i}
-                animate={{ opacity: [0.4, 1, 0.4] }}
+                animate={{ opacity: [0.4, 1, 0.4], scale: [1, 1.3, 1] }}
                 transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.2 }}
-                style={{ width: 6, height: 6, background: '#fff', borderRadius: '50%' }}
+                style={{ width: 7, height: 7, background: '#fff', borderRadius: '50%' }}
               />
             ))}
           </div>
         ) : (
-          <p style={{ fontSize: 15, lineHeight: 1.6, fontWeight: 500 }}>{insight}</p>
+          <p style={{
+            fontSize: 15,
+            lineHeight: 1.65,
+            fontWeight: 600,
+            letterSpacing: '-0.01em',
+            textShadow: '0 1px 4px rgba(0,0,0,0.15)',
+          }}>
+            {insight}
+          </p>
         )}
       </div>
     </motion.div>

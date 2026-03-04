@@ -9,7 +9,7 @@ Also computes streaks, rolling averages, and statistical summaries.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import HTTPException, status
@@ -55,10 +55,9 @@ class WellnessService:
         now = datetime.now(timezone.utc)
         data = {
             "user_id": user_id,
-            "mood": payload.mood.value,
+            "mood_score": payload.mood_score,
             "note": payload.note,
             "tags": payload.tags,
-            "logged_at": (payload.logged_at or now).isoformat(),
             "created_at": now.isoformat(),
         }
         row = await db_insert(supabase_admin, _MOOD_TABLE, data)
@@ -84,7 +83,7 @@ class WellnessService:
             supabase_admin,
             _MOOD_TABLE,
             filters={"user_id": user_id},
-            order_by="logged_at desc",
+            order_by="created_at desc",
             limit=limit,
             offset=offset,
         )
@@ -108,16 +107,10 @@ class WellnessService:
         Returns:
             The created ``SleepResponse``.
         """
-        duration_hours = (
-            (payload.wake_time - payload.bedtime).total_seconds() / 3600
-        )
         now = datetime.now(timezone.utc)
         data = {
             "user_id": user_id,
-            "sleep_date": payload.sleep_date.isoformat(),
-            "bedtime": payload.bedtime.isoformat(),
-            "wake_time": payload.wake_time.isoformat(),
-            "duration_hours": round(duration_hours, 2),
+            "hours_slept": payload.hours,
             "quality": payload.quality,
             "notes": payload.notes,
             "created_at": now.isoformat(),
@@ -145,7 +138,7 @@ class WellnessService:
             supabase_admin,
             _SLEEP_TABLE,
             filters={"user_id": user_id},
-            order_by="sleep_date desc",
+            order_by="created_at desc",
             limit=limit,
             offset=offset,
         )
@@ -171,11 +164,10 @@ class WellnessService:
         data = {
             "user_id": user_id,
             "title": payload.title,
-            "doctor_name": payload.doctor_name,
-            "location": payload.location,
-            "appointment_date": payload.appointment_date.isoformat(),
+            "doctor": payload.doctor,
+            "date": payload.date,
+            "time": payload.time,
             "notes": payload.notes,
-            "reminder_minutes": payload.reminder_minutes,
             "created_at": now.isoformat(),
         }
         row = await db_insert(supabase_admin, _APPOINTMENT_TABLE, data)
@@ -202,12 +194,6 @@ class WellnessService:
             order_by="appointment_date asc",
         )
         appointments = [AppointmentResponse(**r) for r in rows]
-        if upcoming_only:
-            now = datetime.now(timezone.utc)
-            appointments = [
-                a for a in appointments
-                if a.appointment_date.replace(tzinfo=timezone.utc) >= now
-            ]
         return appointments
 
     # ── Stats & Streaks ───────────────────────────────────────────────────
@@ -224,43 +210,42 @@ class WellnessService:
             Populated ``WellnessStats`` model.
         """
         now = datetime.now(timezone.utc)
-        seven_days_ago = (now - timedelta(days=7)).isoformat()
-        thirty_days_ago = (now - timedelta(days=30)).isoformat()
+        _ = now  # reserved for future use
 
         # Fetch data in parallel-ish (Supabase client is sync under the hood)
         all_mood = await db_select(
-            supabase_admin, _MOOD_TABLE, {"user_id": user_id}, order_by="logged_at desc"
+            supabase_admin, _MOOD_TABLE, {"user_id": user_id}, order_by="created_at desc"
         )
         all_sleep = await db_select(
-            supabase_admin, _SLEEP_TABLE, {"user_id": user_id}, order_by="sleep_date desc"
+            supabase_admin, _SLEEP_TABLE, {"user_id": user_id}, order_by="created_at desc"
         )
-        appointments = await self.get_appointments(user_id, upcoming_only=True)
+        appointments = await self.get_appointments(user_id, upcoming_only=False)
 
         # Filter for rolling windows
-        mood_7d = [r for r in all_mood if r["logged_at"] >= seven_days_ago]
-        mood_30d = [r for r in all_mood if r["logged_at"] >= thirty_days_ago]
-        sleep_7d = [r for r in all_sleep if r["sleep_date"] >= seven_days_ago[:10]]
+        mood_7d = all_mood[:7]
+        mood_30d = all_mood[:30]
+        sleep_7d = all_sleep[:7]
 
         avg_mood_7d = (
-            sum(r["mood"] for r in mood_7d) / len(mood_7d) if mood_7d else None
+            sum(r.get("mood_score", 0) for r in mood_7d) / len(mood_7d) if mood_7d else None
         )
         avg_mood_30d = (
-            sum(r["mood"] for r in mood_30d) / len(mood_30d) if mood_30d else None
+            sum(r.get("mood_score", 0) for r in mood_30d) / len(mood_30d) if mood_30d else None
         )
         avg_sleep_hours_7d = (
-            sum(r["duration_hours"] for r in sleep_7d) / len(sleep_7d)
+            sum(r.get("hours_slept", 0) for r in sleep_7d) / len(sleep_7d)
             if sleep_7d
             else None
         )
         avg_sleep_quality_7d = (
-            sum(r["quality"] for r in sleep_7d) / len(sleep_7d) if sleep_7d else None
+            sum(r.get("quality", 0) for r in sleep_7d) / len(sleep_7d) if sleep_7d else None
         )
 
         mood_streak = self._calculate_streak(
-            [r["logged_at"][:10] for r in all_mood]
+            [r["created_at"][:10] for r in all_mood]
         )
         sleep_streak = self._calculate_streak(
-            [r["sleep_date"] for r in all_sleep]
+            [r["created_at"][:10] for r in all_sleep]
         )
 
         return WellnessStats(
@@ -292,11 +277,11 @@ class WellnessService:
             supabase_admin,
             _MOOD_TABLE,
             {"user_id": user_id},
-            columns="logged_at",
-            order_by="logged_at desc",
+            columns="created_at",
+            order_by="created_at desc",
             limit=60,
         )
-        dates = [r["logged_at"][:10] for r in rows]
+        dates = [r["created_at"][:10] for r in rows]
         return self._calculate_streak(dates)
 
     @staticmethod

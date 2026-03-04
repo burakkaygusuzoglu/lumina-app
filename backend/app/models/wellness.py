@@ -5,38 +5,19 @@ Author: Burak Kaygusuzoglu <bkaygusuzoglu@hotmail.com>
 
 from __future__ import annotations
 
-from datetime import date, datetime
-from enum import Enum
-
+from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
-
-
-class MoodLevel(int, Enum):
-    """Numeric mood scale from 1 (very bad) to 5 (excellent)."""
-
-    VERY_BAD = 1
-    BAD = 2
-    NEUTRAL = 3
-    GOOD = 4
-    EXCELLENT = 5
+from typing import Optional, List
 
 
 class MoodEntry(BaseModel):
-    """Single mood data point recorded by the user.
-
-    Attributes:
-        mood: Numeric level from ``MoodLevel`` (1-5).
-        note: Optional free-text note accompanying the check-in.
-        tags: Context labels such as ``work``, ``exercise``, ``social``.
-        logged_at: When the mood was felt; defaults to now.
-    """
+    """Single mood data point recorded by the user."""
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    mood: MoodLevel = Field(..., description="Mood level 1-5")
+    mood_score: int = Field(..., ge=1, le=10, description="Mood level 1-10")
     note: str | None = Field(None, max_length=500, description="Optional accompanying note")
     tags: list[str] = Field(default_factory=list, description="Context tags")
-    logged_at: datetime | None = Field(None, description="Timestamp; defaults to now if omitted")
 
 
 class MoodResponse(BaseModel):
@@ -46,30 +27,19 @@ class MoodResponse(BaseModel):
 
     id: str
     user_id: str
-    mood: int
+    mood_score: int
     note: str | None = None
     tags: list[str] = []
-    logged_at: datetime
     created_at: datetime
 
 
 class SleepEntry(BaseModel):
-    """Sleep session recorded by the user.
-
-    Attributes:
-        sleep_date: Calendar date for the night being recorded.
-        bedtime: When the user went to bed.
-        wake_time: When the user woke up.
-        quality: Self-reported quality score 1-5.
-        notes: Optional observations.
-    """
+    """Sleep session recorded by the user."""
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    sleep_date: date = Field(..., description="Calendar date of the sleep session")
-    bedtime: datetime = Field(..., description="When user went to bed")
-    wake_time: datetime = Field(..., description="When user woke up")
-    quality: int = Field(..., ge=1, le=5, description="Self-reported quality 1-5")
+    hours: float = Field(..., ge=0, le=24, description="Hours slept")
+    quality: int = Field(..., ge=1, le=10, description="Self-reported quality 1-10")
     notes: str | None = Field(None, max_length=500)
 
 
@@ -80,35 +50,22 @@ class SleepResponse(BaseModel):
 
     id: str
     user_id: str
-    sleep_date: date
-    bedtime: datetime
-    wake_time: datetime
-    duration_hours: float
+    hours_slept: float
     quality: int
     notes: str | None = None
     created_at: datetime
 
 
 class HealthAppointment(BaseModel):
-    """Medical or wellness appointment.
-
-    Attributes:
-        title: Appointment description (e.g. ``Dentist check-up``).
-        doctor_name: Name of the practitioner.
-        location: Clinic or hospital name/address.
-        appointment_date: When the appointment takes place.
-        notes: Any preparation notes or follow-ups.
-        reminder_minutes: Minutes before appointment to send reminder.
-    """
+    """Medical or wellness appointment."""
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
     title: str = Field(..., max_length=255)
-    doctor_name: str | None = Field(None, max_length=120)
-    location: str | None = Field(None, max_length=255)
-    appointment_date: datetime = Field(...)
+    doctor: str | None = Field(None, max_length=120)
+    date: str = Field(..., description="Date string YYYY-MM-DD")
+    time: str = Field(..., description="Time string HH:MM")
     notes: str | None = Field(None, max_length=1000)
-    reminder_minutes: int = Field(default=60, ge=0)
 
 
 class AppointmentResponse(BaseModel):
@@ -119,11 +76,10 @@ class AppointmentResponse(BaseModel):
     id: str
     user_id: str
     title: str
-    doctor_name: str | None = None
-    location: str | None = None
-    appointment_date: datetime
+    doctor: str | None = None
+    date: str
+    time: str
     notes: str | None = None
-    reminder_minutes: int
     created_at: datetime
 
 

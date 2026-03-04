@@ -108,6 +108,28 @@ export interface Appointment {
   created_at: string;
 }
 
+/* ── Theme ──────────────────────────────────────────────────────────────── */
+export const THEMES: Record<string, { label: string; bg: string; surface: string; surface2: string; text: string; border: string; muted: string }> = {
+  dark:   { label: 'Siyah',      bg: '#0a0a0f', surface: '#141420', surface2: '#1e1e2e', text: '#f0f0f7', border: 'rgba(255,255,255,0.07)', muted: '#6b6b80' },
+  gray:   { label: 'Gri',        bg: '#111118', surface: '#1c1c26', surface2: '#25253a', text: '#ededf5', border: 'rgba(255,255,255,0.08)', muted: '#72728a' },
+  teal:   { label: 'Turkuaz',    bg: '#031619', surface: '#072028', surface2: '#0c2a35', text: '#e4f5f7', border: 'rgba(61,170,134,0.15)', muted: '#568a90' },
+  navy:   { label: 'Koyu Mavi',  bg: '#050e1f', surface: '#0c1830', surface2: '#112040', text: '#e4ecf7', border: 'rgba(74,143,212,0.15)', muted: '#4a6a8a' },
+  purple: { label: 'Koyu Mor',   bg: '#0d0818', surface: '#190f2a', surface2: '#221538', text: '#ede8f7', border: 'rgba(123,111,218,0.18)', muted: '#6a5888' },
+  white:  { label: 'Beyaz',      bg: '#f0f0f7', surface: '#ffffff', surface2: '#e8e8f2', text: '#0e0e1a', border: 'rgba(0,0,0,0.08)', muted: '#707088' },
+};
+
+export function applyTheme(key: string) {
+  const t = THEMES[key] ?? THEMES.dark;
+  const root = document.documentElement;
+  root.style.setProperty('--bg', t.bg);
+  root.style.setProperty('--surface', t.surface);
+  root.style.setProperty('--surface2', t.surface2);
+  root.style.setProperty('--text', t.text);
+  root.style.setProperty('--text2', t.text);
+  root.style.setProperty('--border', t.border);
+  root.style.setProperty('--muted', t.muted);
+}
+
 /* ── Toast ─────────────────────────────────────────────────────────────── */
 export interface ToastMessage {
   id: string;
@@ -135,6 +157,9 @@ interface AppState {
   toasts: ToastMessage[];
   addToast: (type: ToastMessage['type'], message: string) => void;
   removeToast: (id: string) => void;
+
+  bgTheme: string;
+  setBgTheme: (theme: string) => void;
 
   activeModule: string;
   setActiveModule: (m: string) => void;
@@ -164,6 +189,13 @@ export const useAppStore = create<AppState>()((set) => ({
     setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 3000);
   },
   removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+
+  bgTheme: (() => { const t = localStorage.getItem('lumina_theme') ?? 'dark'; applyTheme(t); return t; })(),
+  setBgTheme: (theme) => {
+    localStorage.setItem('lumina_theme', theme);
+    applyTheme(theme);
+    set({ bgTheme: theme });
+  },
 
   activeModule:    'home',
   setActiveModule: (activeModule) => set({ activeModule }),

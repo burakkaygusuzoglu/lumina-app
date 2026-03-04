@@ -24,6 +24,8 @@ from app.models.wellness import (
     WellnessStats,
 )
 from app.services.wellness_service import WellnessService
+from pydantic import BaseModel
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/wellness", tags=["Wellness Module"])
@@ -176,6 +178,52 @@ async def get_appointments(
     return await _svc.get_appointments(
         user_id=current_user.user_id, upcoming_only=upcoming_only
     )
+
+
+@router.delete(
+    "/appointment/{appointment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a health appointment",
+)
+async def delete_appointment(
+    appointment_id: str,
+    current_user: TokenData = Depends(get_current_user),
+) -> None:
+    """Delete a health appointment by ID."""
+    from app.config import supabase_admin
+    supabase_admin.table("appointments").delete().eq("id", appointment_id).eq("user_id", current_user.user_id).execute()
+
+
+class ExerciseLog(BaseModel):
+    exercise_type: str
+    duration_minutes: int
+    calories_burned: Optional[int] = None
+    notes: Optional[str] = None
+
+
+@router.post(
+    "/exercise",
+    status_code=status.HTTP_201_CREATED,
+    summary="Log an exercise session",
+)
+async def log_exercise(
+    payload: ExerciseLog,
+    current_user: TokenData = Depends(get_current_user),
+) -> dict:
+    """Record an exercise session for the authenticated user."""
+    from app.config import supabase_admin
+    from datetime import datetime, timezone
+    row = {
+        "user_id": current_user.user_id,
+        "exercise_type": payload.exercise_type,
+        "duration_minutes": payload.duration_minutes,
+        "calories_burned": payload.calories_burned,
+        "notes": payload.notes,
+        "recorded_at": datetime.now(timezone.utc).isoformat(),
+    }
+    result = supabase_admin.table("exercise_logs").insert(row).execute()
+    data = result.data[0] if result.data else row
+    return data
 
 
 # ── Stats & Streak ────────────────────────────────────────────────────────────

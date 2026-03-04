@@ -3,6 +3,7 @@ import AICard from '../components/AICard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/appStore';
+import { THEMES } from '../store/appStore';
 import ConfirmModal from '../components/ConfirmModal';
 
 const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
@@ -45,6 +46,8 @@ export default function Settings() {
 
   const navigate  = useNavigate();
   const addToast  = useAppStore((s) => s.addToast);
+  const bgTheme   = useAppStore((s) => s.bgTheme);
+  const setBgTheme = useAppStore((s) => s.setBgTheme);
 
   const [notifications, setNotifications] = useState(() => localStorage.getItem('notif') !== 'false');
   const [dailyReminder, setDailyReminder] = useState(() => localStorage.getItem('daily_reminder') !== 'false');
@@ -103,20 +106,20 @@ export default function Settings() {
     {
       title: 'NOTIFICATIONS',
       rows: [
-        { icon: 'ğŸ””', label: 'Push Notifications', description: 'Get reminders and updates', value: notifications, onChange: requestPushPermission },
-        { icon: 'â°', label: 'Daily Reminder', description: 'Morning journal prompt at 9 AM', value: dailyReminder, onChange: handleDailyReminder },
+        { icon: '””', label: 'Push Notifications', description: 'Get reminders and updates', value: notifications, onChange: requestPushPermission },
+        { icon: '°', label: 'Daily Reminder', description: 'Morning journal prompt at 9 AM', value: dailyReminder, onChange: handleDailyReminder },
       ],
     },
     {
       title: 'APPEARANCE',
       rows: [
-        { icon: 'ğŸ“', label: 'Compact View', description: 'Show more content in less space', value: compactView, onChange: (v: boolean) => { setCompactView(v); save('compact', v); } },
+        { icon: '“', label: 'Compact View', description: 'Show more content in less space', value: compactView, onChange: (v: boolean) => { setCompactView(v); save('compact', v); } },
       ],
     },
     {
       title: 'PRIVACY',
       rows: [
-        { icon: 'ğŸ“Š', label: 'Analytics', description: 'Help improve the app', value: analytics, onChange: (v: boolean) => { setAnalytics(v); save('analytics', v); } },
+        { icon: '“Š', label: 'Analytics', description: 'Help improve the app', value: analytics, onChange: (v: boolean) => { setAnalytics(v); save('analytics', v); } },
       ],
     },
   ];
@@ -126,11 +129,46 @@ export default function Settings() {
       <div style={{ marginBottom: 24 }}><AICard insight={aiInsight} /></div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button className="btn-icon" onClick={() => navigate(-1)} style={{ width: 36, height: 36 }}>â€¹</button>
+        <button className="btn-icon" onClick={() => navigate(-1)} style={{ width: 36, height: 36 }}>€¹</button>
         <h1 style={{ fontSize: 24, fontWeight: 800 }}>Settings</h1>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Theme / Background Color */}
+        <div className="card">
+          <p className="section-label" style={{ marginBottom: 14 }}>🎨 BACKGROUND THEME</p>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {Object.entries(THEMES).map(([key, theme]) => {
+              const active = bgTheme === key;
+              return (
+                <motion.button
+                  key={key}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => { setBgTheme(key); addToast('success', `Theme: ${theme.label}`); }}
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  }}
+                >
+                  <div style={{
+                    width: 46, height: 46, borderRadius: 14,
+                    background: theme.bg,
+                    border: active ? '2.5px solid var(--mind)' : '2px solid var(--border)',
+                    boxShadow: active ? '0 0 0 3px rgba(123,111,218,0.25)' : 'none',
+                    transition: 'all 0.2s',
+                    position: 'relative', overflow: 'hidden',
+                  }}>
+                    <div style={{ position: 'absolute', bottom: 4, right: 4, width: 18, height: 18, borderRadius: 6, background: theme.surface }} />
+                    {active && (
+                      <div style={{ position: 'absolute', top: 3, right: 3, width: 10, height: 10, borderRadius: '50%', background: 'var(--mind)' }} />
+                    )}
+                  </div>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: active ? 'var(--text)' : 'var(--muted)', letterSpacing: '0.01em' }}>{theme.label}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
         {SECTIONS.map((section) => (
           <div key={section.title} className="card">
             <p className="section-label" style={{ marginBottom: 6 }}>{section.title}</p>
@@ -145,22 +183,22 @@ export default function Settings() {
         <div className="card">
           <p className="section-label" style={{ marginBottom: 6 }}>ABOUT</p>
           {[
-            { icon: 'ğŸ“‹', label: 'Privacy Policy' },
-            { icon: 'ğŸ“„', label: 'Terms of Service' },
-            { icon: 'ğŸ›', label: 'Report a Bug' },
-            { icon: 'â­', label: 'Rate the App' },
+            { icon: '“‹', label: 'Privacy Policy' },
+            { icon: '“„', label: 'Terms of Service' },
+            { icon: '›', label: 'Report a Bug' },
+            { icon: '­', label: 'Rate the App' },
           ].map((item) => (
             <button key={item.label} onClick={() => handleAboutAction(item.label)}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid var(--border)', color: 'var(--text)', textAlign: 'left' }}>
               <span style={{ fontSize: 18, width: 28, textAlign: 'center' }}>{item.icon}</span>
               <span style={{ flex: 1, fontSize: 14 }}>{item.label}</span>
-              <span style={{ color: 'var(--muted)' }}>â€º</span>
+              <span style={{ color: 'var(--muted)' }}>€º</span>
             </button>
           ))}
         </div>
 
         <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-          Lumina Life OS Â· v2.0.0
+          Lumina Life OS · v2.0.0
         </p>
       </div>
 

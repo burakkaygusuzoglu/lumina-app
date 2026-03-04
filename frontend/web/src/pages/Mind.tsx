@@ -10,18 +10,18 @@ import ImageUpload from '../components/ImageUpload';
 const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
 
 const TYPES = [
-  { key: '',            label: 'All',        icon: '◈',  color: 'var(--text)'     },
-  { key: 'note',        label: 'Note',       icon: '◻',  color: '#60a5fa'         },
-  { key: 'idea',        label: 'Idea',       icon: '⚡',  color: '#fbbf24'         },
-  { key: 'experience',  label: 'Experience', icon: '🌟',  color: '#34d399'         },
-  { key: 'dream',       label: 'Dream',      icon: '🌙',  color: '#a78bfa'         },
-  { key: 'goal',        label: 'Goal',       icon: '🎯',  color: '#f87171'         },
+  { key: '',            label: 'All',        icon: '◈',  color: '#a0a0b8'         },
+  { key: 'note',        label: 'Note',       icon: '◻',  color: '#4a8fd4'         },
+  { key: 'idea',        label: 'Idea',       icon: '⚡',  color: '#f0a855'         },
+  { key: 'experience',  label: 'Experience', icon: '🌟',  color: '#3daa86'         },
+  { key: 'dream',       label: 'Dream',      icon: '🌙',  color: '#7b6fda'         },
+  { key: 'goal',        label: 'Goal',       icon: '🎯',  color: '#c4607a'         },
   { key: 'gratitude',   label: 'Gratitude',  icon: '✦',  color: '#e2b96a'         },
 ];
 
 const TYPE_ICON: Record<string, string> = { note: '◻', idea: '⚡', experience: '🌟', dream: '🌙', goal: '🎯', gratitude: '✦' };
-const TYPE_COLOR: Record<string, string> = { note: '#60a5fa', idea: '#fbbf24', experience: '#34d399', dream: '#a78bfa', goal: '#f87171', gratitude: '#e2b96a' };
-const TYPE_BG: Record<string, string> = { note: 'rgba(96,165,250,0.12)', idea: 'rgba(251,191,36,0.12)', experience: 'rgba(52,211,153,0.12)', dream: 'rgba(167,139,250,0.12)', goal: 'rgba(248,113,113,0.12)', gratitude: 'rgba(226,185,106,0.12)' };
+const TYPE_COLOR: Record<string, string> = { note: '#4a8fd4', idea: '#f0a855', experience: '#3daa86', dream: '#7b6fda', goal: '#c4607a', gratitude: '#e2b96a' };
+const TYPE_BG: Record<string, string> = { note: 'rgba(74,143,212,0.10)', idea: 'rgba(240,168,85,0.10)', experience: 'rgba(61,170,134,0.10)', dream: 'rgba(123,111,218,0.10)', goal: 'rgba(196,96,122,0.10)', gratitude: 'rgba(226,185,106,0.10)' };
 
 const MOOD_EMOJIS = ['', '', '', '', '', '', '', '', '', ''];
 
@@ -270,22 +270,24 @@ export default function Mind() {
             const active = typeFilter === t.key;
             const col = t.color;
             return (
-              <button 
+              <motion.button
                 key={t.key} 
+                whileTap={{ scale: 0.93 }}
                 onClick={() => setTypeFilter(t.key)}
                 style={{ 
-                  flexShrink: 0, padding: '8px 14px', borderRadius: 12, border: 'none',
-                  background: active ? col : 'transparent',
-                  color: active ? (t.key === 'idea' ? '#1a1a1a' : '#fff') : 'var(--text2)',
+                  flexShrink: 0, padding: '7px 13px', borderRadius: 11,
+                  border: active ? `1.5px solid ${col}50` : '1.5px solid transparent',
+                  background: active ? `${col}22` : 'transparent',
+                  color: active ? col : 'var(--muted)',
                   fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5,
                   transition: 'all 0.2s',
-                  boxShadow: active ? `0 3px 12px ${col}40` : 'none',
+                  boxShadow: active ? `0 2px 10px ${col}30` : 'none',
                   cursor: 'pointer'
                 }}
               >
                 <span>{t.icon}</span> 
                 {t.label}
-              </button>
+              </motion.button>
             );
           })}
         </div>
