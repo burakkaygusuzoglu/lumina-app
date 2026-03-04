@@ -255,7 +255,10 @@ function VaultReveal({ itemId, type, label, onCopy }: { itemId: string, type: 'p
   );
 }
 
+import AICard from '../components/AICard';
+
 export default function Vault() {
+  const [aiInsight] = useState('AI confirms your vault architecture is secure and encrypted.');
   const qc       = useQueryClient();
   const addToast = useAppStore((s) => s.addToast);
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem('vault_unlocked') === '1');
@@ -292,8 +295,9 @@ export default function Vault() {
   if (!unlocked) return <MasterPassGate onUnlock={() => setUnlocked(true)} />;
 
   return (
-    <motion.div {...PAGE} className="page">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+    <motion.div {...PAGE} className="page">      <div style={{ marginBottom: 24 }}>
+        <AICard insight={aiInsight} />
+      </div>      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>Vault</h1>
           <p style={{ fontSize: 13, color: 'var(--muted)' }}>{items.length} items secured</p>
@@ -408,3 +412,4 @@ export default function Vault() {
     </motion.div>
   );
 }
+

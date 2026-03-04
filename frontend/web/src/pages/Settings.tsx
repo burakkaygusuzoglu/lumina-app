@@ -1,4 +1,5 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
+import AICard from '../components/AICard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/appStore';
@@ -26,18 +27,22 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
 
 function SettingRow({ icon, label, description, end }: { icon: string; label: string; description?: string; end: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0', borderBottom: '1px solid var(--border)' }}>
-      <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 14, fontWeight: 500 }}>{label}</p>
-        {description && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{description}</p>}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: 'var(--surface)', margin: '4px 0', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, background: 'var(--bg)', borderRadius: 12, boxShadow: 'inset 0 1px 3px rgba(255,255,255,0.05)' }}>{icon}</div>
+        <div>
+          <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{label}</p>
+          {description && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{description}</p>}
+        </div>
       </div>
-      {end}
+      <div>{end}</div>
     </div>
   );
 }
 
 export default function Settings() {
+  const [aiInsight] = useState('AI says: Dark mode is saving your battery and eye strain.');
+
   const navigate  = useNavigate();
   const addToast  = useAppStore((s) => s.addToast);
 
@@ -98,28 +103,30 @@ export default function Settings() {
     {
       title: 'NOTIFICATIONS',
       rows: [
-        { icon: '🔔', label: 'Push Notifications', description: 'Get reminders and updates', value: notifications, onChange: requestPushPermission },
-        { icon: '⏰', label: 'Daily Reminder', description: 'Morning journal prompt at 9 AM', value: dailyReminder, onChange: handleDailyReminder },
+        { icon: 'ğŸ””', label: 'Push Notifications', description: 'Get reminders and updates', value: notifications, onChange: requestPushPermission },
+        { icon: 'â°', label: 'Daily Reminder', description: 'Morning journal prompt at 9 AM', value: dailyReminder, onChange: handleDailyReminder },
       ],
     },
     {
       title: 'APPEARANCE',
       rows: [
-        { icon: '📐', label: 'Compact View', description: 'Show more content in less space', value: compactView, onChange: (v: boolean) => { setCompactView(v); save('compact', v); } },
+        { icon: 'ğŸ“', label: 'Compact View', description: 'Show more content in less space', value: compactView, onChange: (v: boolean) => { setCompactView(v); save('compact', v); } },
       ],
     },
     {
       title: 'PRIVACY',
       rows: [
-        { icon: '📊', label: 'Analytics', description: 'Help improve the app', value: analytics, onChange: (v: boolean) => { setAnalytics(v); save('analytics', v); } },
+        { icon: 'ğŸ“Š', label: 'Analytics', description: 'Help improve the app', value: analytics, onChange: (v: boolean) => { setAnalytics(v); save('analytics', v); } },
       ],
     },
   ];
 
   return (
     <motion.div {...PAGE} className="page">
+      <div style={{ marginBottom: 24 }}><AICard insight={aiInsight} /></div>
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button className="btn-icon" onClick={() => navigate(-1)} style={{ width: 36, height: 36 }}>‹</button>
+        <button className="btn-icon" onClick={() => navigate(-1)} style={{ width: 36, height: 36 }}>â€¹</button>
         <h1 style={{ fontSize: 24, fontWeight: 800 }}>Settings</h1>
       </div>
 
@@ -138,22 +145,22 @@ export default function Settings() {
         <div className="card">
           <p className="section-label" style={{ marginBottom: 6 }}>ABOUT</p>
           {[
-            { icon: '📋', label: 'Privacy Policy' },
-            { icon: '📄', label: 'Terms of Service' },
-            { icon: '🐛', label: 'Report a Bug' },
-            { icon: '⭐', label: 'Rate the App' },
+            { icon: 'ğŸ“‹', label: 'Privacy Policy' },
+            { icon: 'ğŸ“„', label: 'Terms of Service' },
+            { icon: 'ğŸ›', label: 'Report a Bug' },
+            { icon: 'â­', label: 'Rate the App' },
           ].map((item) => (
             <button key={item.label} onClick={() => handleAboutAction(item.label)}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid var(--border)', color: 'var(--text)', textAlign: 'left' }}>
               <span style={{ fontSize: 18, width: 28, textAlign: 'center' }}>{item.icon}</span>
               <span style={{ flex: 1, fontSize: 14 }}>{item.label}</span>
-              <span style={{ color: 'var(--muted)' }}>›</span>
+              <span style={{ color: 'var(--muted)' }}>â€º</span>
             </button>
           ))}
         </div>
 
         <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-          Lumina Life OS · v2.0.0
+          Lumina Life OS Â· v2.0.0
         </p>
       </div>
 
@@ -167,3 +174,4 @@ export default function Settings() {
     </motion.div>
   );
 }
+

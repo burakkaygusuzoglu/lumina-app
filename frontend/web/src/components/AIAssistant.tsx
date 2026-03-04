@@ -5,6 +5,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppStore } from '../store/appStore';
 import { api } from '../lib/api';
 
 interface Message {
@@ -55,6 +57,15 @@ function TypingDots() {
 }
 
 export default function AIAssistant() {
+  const qc = useQueryClient();
+  const addToast = useAppStore((s) => s.addToast);
+  const saveNoteMutation = useMutation({
+    mutationFn: (text: string) => api.post('/memories', { content: text, type: 'Idea', tags: ['AI Note'] }).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['memories'] });
+      addToast('success', 'Saved to Mind seamlessly!');
+    }
+  });
   const location = useLocation();
   const [open,     setOpen]     = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -82,7 +93,7 @@ export default function AIAssistant() {
       const aiMsg: Message = {
         id:      (Date.now() + 1).toString(),
         role:    'assistant',
-        content: data.response ?? data.message ?? 'I\'m here to help.',
+        content: data.reply ?? data.response ?? data.message ?? "I'm here to help.",
       };
       setMessages((prev) => [...prev, aiMsg]);
     } catch {
@@ -110,6 +121,7 @@ export default function AIAssistant() {
       <AnimatePresence>
         {!open && (
           <motion.button
+            id="lumina-ai-trigger"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{    scale: 0, opacity: 0 }}
@@ -250,7 +262,8 @@ export default function AIAssistant() {
                   animate={{ opacity: 1, y: 0 }}
                   style={{
                     display:   'flex',
-                    justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    flexDirection: 'column',
+                    alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
                   }}
                 >
                   <div
@@ -271,6 +284,31 @@ export default function AIAssistant() {
                   >
                     {msg.content}
                   </div>
+                  {msg.role === 'assistant' && (
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.4 }}
+                      onClick={() => saveNoteMutation.mutate(msg.content)}
+                      disabled={saveNoteMutation.isPending}
+                      style={{
+                        marginTop: 5,
+                        background: 'none',
+                        border: '1px solid rgba(123,111,218,0.3)',
+                        borderRadius: 20,
+                        padding: '4px 10px',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: 'var(--mind)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      ✦ Save to Mind
+                    </motion.button>
+                  )}
                 </motion.div>
               ))}
 

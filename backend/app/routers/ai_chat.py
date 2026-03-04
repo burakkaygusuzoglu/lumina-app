@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.config import supabase_admin
 from app.database import db_insert, db_select
@@ -451,6 +451,51 @@ async def get_insight_history(
         )
         for r in rows
     ]
+
+
+# ── AI Journal Prompt ─────────────────────────────────────────────────────────
+
+@router.get(
+    "/journal-prompt",
+    status_code=status.HTTP_200_OK,
+    summary="Get AI journal prompt by category",
+)
+async def get_journal_prompt_by_category(
+    category: str = Query("reflection"),
+    seed: int = Query(0),
+    current_user: TokenData = Depends(get_current_user),
+) -> dict:
+    """Return a personalised journal prompt by category and seed for variety."""
+    recent = await _memories.get_recent_memories(user_id=current_user.user_id, limit=3)
+    memory_snippet = (
+        "\n".join(f"- {m.get('content', '')[:120]}" for m in recent[:3])
+        if recent else ""
+    )
+    system = (
+        "You are a mindful journaling coach. "
+        "Generate ONE thoughtful, introspective journal prompt. "
+        "Return only the prompt text — no quotes, no explanation, 1-2 sentences max."
+    )
+    user_msg = (
+        f"Generate a journal prompt for the category: {category}. "
+        f"Make it personal and thought-provoking. Variation seed: {seed}."
+    )
+    if memory_snippet:
+        user_msg += f"\n\nContext from user's recent memories:\n{memory_snippet}"
+
+    try:
+        response = _ai._client.messages.create(
+            model=_ai._model,
+            max_tokens=150,
+            system=system,
+            messages=[{"role": "user", "content": user_msg}],
+        )
+        prompt_text = response.content[0].text.strip() if response.content else ""
+    except Exception as exc:
+        logger.warning("journal-prompt generation failed: %s", exc)
+        prompt_text = ""
+
+    return {"prompt": prompt_text or "What is one small thing that brought you peace today?"}
 
 
 # ── AI Food Analysis ──────────────────────────────────────────────────────────

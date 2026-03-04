@@ -1,4 +1,5 @@
 ﻿import { useState } from 'react';
+import AICard from '../components/AICard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
@@ -23,6 +24,8 @@ function Skel() {
 }
 
 export default function Journal() {
+  const [aiInsight] = useState('AI prompt: Reflect on three things that made you smile today.');
+
   const qc       = useQueryClient();
   const addToast = useAppStore((s) => s.addToast);
   const [showCard, setShowCard]   = useState(true);
@@ -39,6 +42,7 @@ export default function Journal() {
   const [capsuleContent, setCapsuleContent] = useState('');
   const [capsuleDate, setCapsuleDate] = useState('');
   const [writing, setWriting]     = useState(false);
+  const [inlineWriting, setInlineWriting] = useState(false);
 
   const { data: prompt, isFetching: promptLoading } = useQuery<{ prompt: string }>({
     queryKey: ['journal-prompt', promptCat, promptSeed],
@@ -57,7 +61,7 @@ export default function Journal() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['journal'] });
       addToast('success', 'Entry saved ');
-      setNewContent(''); setNewTags([]); setWriting(false);
+      setNewContent(''); setNewTags([]); setWriting(false); setInlineWriting(false);
     },
     onError: () => addToast('error', 'Failed to save entry'),
   });
@@ -75,7 +79,7 @@ export default function Journal() {
   });
 
   const capsuleMutation = useMutation({
-      mutationFn: () => api.post('/journal/timecapsule', { letter: capsuleContent, open_at: capsuleDate }).then((r) => r.data),
+      mutationFn: () => api.post('/journal/timecapsule', { title: "Letters to future", letter: capsuleContent, open_date: new Date(capsuleDate).toISOString() }).then((r) => r.data),
       onSuccess: () => { addToast('success', 'Time capsule sealed! ⏳'); setCapsuleContent(''); setCapsuleDate(''); setShowTimeCapsule(false); },
   });
 
@@ -93,13 +97,14 @@ export default function Journal() {
   function usePrompt() {
     if (prompt?.prompt) {
       setNewContent(prompt.prompt + '\n\n');
-      setWriting(true);
-      setShowCard(false);
+      setInlineWriting(true);
     }
   }
 
   return (
     <motion.div {...PAGE} className="page">
+      <div style={{ marginBottom: 24 }}><AICard insight={aiInsight} /></div>
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>Journal</h1>
@@ -112,57 +117,171 @@ export default function Journal() {
         </motion.button>
       </div>
 
-      {/* AI Prompt Card */}
+      {/* ── AI Prompt Card — immersive premium design ── */}
       <AnimatePresence>
-        {showCard && (
+        {showCard && !inlineWriting && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-            className="card"
-            style={{ background: 'linear-gradient(135deg, rgba(196,96,122,0.15), rgba(196,96,122,0.05))', borderColor: 'rgba(196,96,122,0.25)', marginBottom: 20 }}
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10, scale: 0.97 }}
+            style={{
+              background: 'linear-gradient(160deg, rgba(196,96,122,0.18) 0%, rgba(123,111,218,0.12) 60%, rgba(61,170,134,0.08) 100%)',
+              border: '1px solid rgba(196,96,122,0.25)',
+              borderRadius: 24, padding: 24, marginBottom: 20,
+              position: 'relative', overflow: 'hidden',
+            }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <p className="section-label"> TODAY'S PROMPT</p>
-              <button className="btn-icon" onClick={() => setShowCard(false)} style={{ width: 24, height: 24, fontSize: 11 }}></button>
-            </div>
-            {promptLoading ? (
-              <div className="skeleton" style={{ height: 40, marginBottom: 10 }} />
-            ) : (
-              <p style={{ fontSize: 15, lineHeight: 1.6, fontFamily: 'var(--font-display)', fontStyle: 'italic', marginBottom: 12 }}>
-                "{prompt?.prompt ?? 'What are you feeling grateful for today?'}"
-              </p>
-            )}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn-secondary" onClick={regeneratePrompt} style={{ flex: 1, fontSize: 12 }}> New Prompt</button>
-              <button
+            <div style={{ position: 'absolute', top: -40, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(196,96,122,0.25)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: -30, left: -20, width: 90, height: 90, borderRadius: '50%', background: 'rgba(123,111,218,0.2)', filter: 'blur(40px)', pointerEvents: 'none' }} />
+
+            <div style={{ position: 'relative' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ padding: '4px 12px', borderRadius: 20, background: 'rgba(196,96,122,0.18)', border: '1px solid rgba(196,96,122,0.3)', color: 'var(--journal)', fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  ✦ {promptCat}
+                </span>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={regeneratePrompt} disabled={promptLoading}
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '6px 12px', color: 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    {promptLoading ? '...' : '↻ New'}
+                  </button>
+                  <button className="btn-icon" onClick={() => setShowCard(false)} style={{ width: 30, height: 30, fontSize: 11 }}>✕</button>
+                </div>
+              </div>
+
+              {promptLoading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+                  <div className="skeleton" style={{ height: 22, width: '88%' }} />
+                  <div className="skeleton" style={{ height: 22, width: '70%' }} />
+                </div>
+              ) : (
+                <p style={{
+                  fontSize: 20, lineHeight: 1.5,
+                  fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 500,
+                  color: 'var(--text)', marginBottom: 22, letterSpacing: '-0.01em',
+                }}>
+                  "{prompt?.prompt ?? 'What are you feeling grateful for today?'}"
+                </p>
+              )}
+
+              <motion.button
+                whileTap={{ scale: 0.97 }}
                 onClick={usePrompt}
-                style={{ flex: 2, padding: '10px', borderRadius: 'var(--r-md)', background: 'var(--journal)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                style={{
+                  width: '100%', padding: '14px 20px', borderRadius: 16,
+                  background: 'linear-gradient(135deg, var(--journal), #e07a8a)',
+                  border: 'none', color: '#fff', fontSize: 15, fontWeight: 700,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  boxShadow: '0 8px 24px -8px rgba(196,96,122,0.5)',
+                }}
               >
-                Write Now
-              </button>
+                ✏ Write Now
+              </motion.button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Time Capsule CTA */}
-      <button
+      {/* ── Inline writing area ── */}
+      <AnimatePresence>
+        {inlineWriting && (
+          <motion.div
+            key="inline-write"
+            initial={{ opacity: 0, scaleY: 0.85, originY: 0 }}
+            animate={{ opacity: 1, scaleY: 1 }}
+            exit={{ opacity: 0, scaleY: 0.85 }}
+            transition={{ type: 'spring', damping: 26, stiffness: 280 }}
+            style={{ marginBottom: 20, overflow: 'hidden' }}
+          >
+            <div style={{ background: 'var(--surface)', border: '1px solid rgba(196,96,122,0.3)', borderRadius: 20, padding: 20 }}>
+              {prompt?.prompt && (
+                <p style={{ fontSize: 13, fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'rgba(196,96,122,0.85)', marginBottom: 14, lineHeight: 1.4 }}>
+                  "{prompt.prompt}"
+                </p>
+              )}
+
+              <textarea
+                className="field"
+                placeholder="Start writing..."
+                rows={6}
+                value={newContent}
+                onChange={(e) => setNewContent(e.target.value)}
+                style={{ marginBottom: 14, fontSize: 15, lineHeight: 1.65, resize: 'vertical' }}
+                autoFocus
+              />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 14, overflowX: 'auto', scrollbarWidth: 'none' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', marginRight: 4, flexShrink: 0 }}>MOOD</p>
+                {MOODS.map((em, i) => (
+                  <button key={i} onClick={() => setNewMood(i + 1)}
+                    style={{
+                      background: newMood === i+1 ? 'rgba(196,96,122,0.18)' : 'none',
+                      border: newMood === i+1 ? '1px solid rgba(196,96,122,0.35)' : '1px solid transparent',
+                      borderRadius: 10, padding: '4px 7px', cursor: 'pointer', fontSize: 20,
+                      transform: newMood === i+1 ? 'scale(1.25)' : 'scale(1)', transition: 'all 0.15s', flexShrink: 0,
+                    }}>
+                    {em}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => { setInlineWriting(false); setNewContent(''); }}
+                  className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                <button
+                  className="btn-primary"
+                  onClick={() => newContent.trim() && createMutation.mutate()}
+                  disabled={createMutation.isPending || !newContent.trim()}
+                  style={{ flex: 2, background: 'linear-gradient(135deg, var(--journal), #e07a8a)' }}
+                >
+                  {createMutation.isPending ? 'Saving...' : 'Save Entry ✓'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Time Capsule CTA — with hourglass visual ── */}
+      <motion.button
         onClick={() => setShowTimeCapsule(true)}
-        className="card card-hover"
-        style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, textAlign: 'left', cursor: 'pointer', background: 'rgba(226,185,106,0.08)', borderColor: 'rgba(226,185,106,0.2)' }}
+        whileTap={{ scale: 0.97 }}
+        style={{
+          width: '100%', marginBottom: 20, textAlign: 'left', cursor: 'pointer',
+          background: 'linear-gradient(135deg, rgba(226,185,106,0.12) 0%, rgba(212,134,74,0.06) 100%)',
+          border: '1px solid rgba(226,185,106,0.22)', borderRadius: 20, padding: 0,
+          position: 'relative', overflow: 'hidden',
+        }}
       >
-        <span style={{ fontSize: 28 }}>🕰️</span>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <p style={{ fontWeight: 800, fontSize: 15, color: '#f8fafc' }}>Seal a Time Capsule</p>
-            <span className="badge" style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-              E2E Secure
-            </span>
+        <svg style={{ position: 'absolute', right: -10, top: 0, pointerEvents: 'none', opacity: 0.07 }} width="160" height="110" viewBox="0 0 160 110" fill="none">
+          <circle cx="120" cy="30" r="50" fill="#e2b96a" />
+          <circle cx="145" cy="85" r="25" fill="#d4864a" />
+          <path d="M55 8 L85 8 L70 52 L85 96 L55 96 L70 52 Z" stroke="#e2b96a" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+          <line x1="53" y1="8" x2="87" y2="8" stroke="#e2b96a" strokeWidth="3" strokeLinecap="round"/>
+          <line x1="53" y1="96" x2="87" y2="96" stroke="#e2b96a" strokeWidth="3" strokeLinecap="round"/>
+          <circle cx="70" cy="48" r="3" fill="#e2b96a"/>
+          <circle cx="66" cy="56" r="2" fill="#e2b96a" opacity="0.6"/>
+          <circle cx="74" cy="56" r="2" fill="#e2b96a" opacity="0.6"/>
+          <text x="10" y="25" fontSize="14" fill="#e2b96a">✦</text>
+          <text x="135" y="105" fontSize="9" fill="#d4864a">✦</text>
+          <text x="150" y="20" fontSize="7" fill="#e2b96a">✦</text>
+        </svg>
+        <div style={{ position: 'relative', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{
+            width: 50, height: 50, borderRadius: 16, flexShrink: 0,
+            background: 'linear-gradient(135deg, rgba(226,185,106,0.25), rgba(212,134,74,0.15))',
+            border: '1px solid rgba(226,185,106,0.35)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24,
+          }}>
+            ⏳
           </div>
-          <p style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2 }}>Write a deeply personal letter to your future self.</p>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <p style={{ fontWeight: 800, fontSize: 15, color: '#f8fafc' }}>Seal a Time Capsule</p>
+              <span style={{ padding: '2px 8px', borderRadius: 20, background: 'rgba(16,185,129,0.12)', color: '#10b981', fontSize: 10, fontWeight: 700 }}>🔒 E2E</span>
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--text2)' }}>Write a letter to your future self</p>
+          </div>
+          <span style={{ color: 'var(--gold)', fontSize: 18, opacity: 0.6, flexShrink: 0 }}>›</span>
         </div>
-        <span style={{ marginLeft: 'auto', color: 'var(--muted)' }}>→</span>
-      </button>
+      </motion.button>
 
       {/* Journal entries */}
       {isLoading ? (
@@ -377,3 +496,4 @@ export default function Journal() {
     </motion.div>
   );
 }
+

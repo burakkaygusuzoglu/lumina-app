@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -240,3 +241,94 @@ async def refresh_token(payload: RefreshRequest) -> Token:
             created_at=user.created_at,
         ),
     )
+
+
+class ProfileUpdate(BaseModel):
+    full_name: str | None = None
+    avatar_url: str | None = None
+
+
+@router.put(
+    "/profile",
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update current user's profile",
+)
+async def update_profile(
+    payload: ProfileUpdate,
+    current_user: TokenData = Depends(get_current_user),
+) -> UserResponse:
+    """Update full_name and/or avatar_url for the authenticated user."""
+    try:
+        updates: dict = {}
+        if payload.full_name is not None:
+            updates["full_name"] = payload.full_name
+        if payload.avatar_url is not None:
+            updates["avatar_url"] = payload.avatar_url
+
+        response = supabase_admin.auth.admin.update_user_by_id(
+            current_user.user_id,
+            {"user_metadata": updates},
+        )
+        user = response.user
+        return UserResponse(
+            id=str(user.id),
+            email=user.email,
+            full_name=user.user_metadata.get("full_name", ""),
+            avatar_url=user.user_metadata.get("avatar_url"),
+            created_at=user.created_at,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.get("/export", summary="Export all user data as JSON")
+async def export_data(
+    current_user: TokenData = Depends(get_current_user),
+) -> dict:
+    """Export all user data as a downloadable JSON payload."""
+    from datetime import datetime, timezone
+
+    user_id = current_user.user_id
+
+    def safe_fetch(table: str, select_cols: str = "*") -> list:
+        try:
+            return (
+                supabase_admin.table(table)
+                .select(select_cols)
+                .eq("user_id", user_id)
+                .execute()
+                .data
+                or []
+            )
+        except Exception:
+            return []
+
+    journals  = safe_fetch("journal_entries")
+    memories  = safe_fetch("memories")
+    tasks     = safe_fetch("tasks")
+    moods     = safe_fetch("mood_entries")
+    vault_meta = safe_fetch("vault_items", "id,title,category,created_at")
+    nutrition = safe_fetch("nutrition_logs")
+
+    try:
+        user_resp = supabase_admin.auth.admin.get_user_by_id(user_id)
+        u = user_resp.user
+        user_data = {
+            "email": u.email,
+            "full_name": u.user_metadata.get("full_name", "") if u else "",
+            "created_at": str(u.created_at) if u else "",
+        }
+    except Exception:
+        user_data = {}
+
+    return {
+        "export_date": datetime.now(timezone.utc).isoformat(),
+        "user": user_data,
+        "journal_entries": journals,
+        "memories": memories,
+        "tasks": tasks,
+        "mood_entries": moods,
+        "nutrition_logs": nutrition,
+        "vault_items_count": len(vault_meta),
+    }

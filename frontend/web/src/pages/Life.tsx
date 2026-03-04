@@ -1,4 +1,5 @@
 ﻿import { useState, useMemo } from 'react';
+import AICard from '../components/AICard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
@@ -41,6 +42,8 @@ function Skel() {
 }
 
 export default function Life() {
+  const [aiInsight] = useState('AI highlights: Breaking down your upcoming priorities can reduce stress.');
+
   const qc       = useQueryClient();
   const addToast = useAppStore((s) => s.addToast);
   const [tab, setTab]           = useState<'today'|'upcoming'|'all'>('today');
@@ -81,7 +84,7 @@ export default function Life() {
     onSuccess: () => { 
       triggerHaptic('success');
       qc.invalidateQueries({ queryKey: ['tasks'] }); 
-      addToast('success', 'Task completed! 🌟'); 
+      addToast('success', 'Task completed! ??'); 
     },
     onError:   () => addToast('error', 'Failed to complete'),
   });
@@ -129,6 +132,8 @@ export default function Life() {
 
   return (
     <motion.div {...PAGE} className="page">
+      <div style={{ marginBottom: 24 }}><AICard insight={aiInsight} /></div>
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>Life</h1>
@@ -154,10 +159,10 @@ export default function Life() {
       {/* AI Focus Tip */}
       <div className="card glass" style={{ marginBottom: 16, background: 'rgba(74,143,212,0.05)', borderColor: 'rgba(74,143,212,0.2)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: aiTip ? 10 : 0 }}>
-          <p className="section-label">✨ AI FOCUS TIP</p>
+          <p className="section-label">? AI FOCUS TIP</p>
           <button onClick={() => { triggerHaptic('medium'); getAiFocusTip(); }} disabled={loadingTip}
             style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(74,143,212,0.15)', border: '1px solid rgba(74,143,212,0.3)', color: 'var(--life)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-            {loadingTip ? 'Thinking...' : aiTip ? '🔄 Refresh' : '✨ Get Tip'}
+            {loadingTip ? 'Thinking...' : aiTip ? '?? Refresh' : '? Get Tip'}
           </button>
         </div>
         <AnimatePresence>
@@ -214,7 +219,7 @@ export default function Life() {
                       transition: 'background 0.3s ease, border-color 0.3s ease'
                     }}>
                     {task.status === 'completed' && (
-                      <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} style={{ color: '#fff', fontSize: 13, fontWeight: 'bold' }}>✓</motion.span>
+                      <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} style={{ color: '#fff', fontSize: 13, fontWeight: 'bold' }}>?</motion.span>
                     )}
                   </motion.button>
 
@@ -350,3 +355,4 @@ export default function Life() {
     </motion.div>
   );
 }
+

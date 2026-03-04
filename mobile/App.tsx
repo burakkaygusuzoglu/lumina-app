@@ -1,7 +1,3 @@
-/**
- * Lumina Life OS — Mobile App
- * React Native + Expo + React Navigation bottom tabs
- */
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';

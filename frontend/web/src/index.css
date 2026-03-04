@@ -1,22 +1,22 @@
-﻿/* ── Lumina Life OS — Elite Midnight Premium Theme ── */
+﻿/* ── Lumina Life OS — Instagram Noir Premium Theme ── */
 
 :root {
-  --bg:       #0f1115;
-  --bg2:      #15181e;
-  --surface:  #1b1f27;
-  --surface2: #232833;
-  --border:   rgba(255,255,255,0.08);
-  --border2:  rgba(255,255,255,0.14);
-  --text:     #f8fafc;
-  --text2:    #94a3b8;
-  --muted:    #64748b;
-  --mind:     #8b5cf6;
-  --wellness: #10b981;
-  --vault:    #f59e0b;
-  --life:     #3b82f6;
-  --journal:  #ec4899;
+  --bg:       #000000;
+  --bg2:      #0a0a0a;
+  --surface:  #121212;
+  --surface2: #262626;
+  --border:   rgba(255,255,255,0.15);
+  --border2:  rgba(255,255,255,0.25);
+  --text:     #ffffff;
+  --text2:    #a8a8a8;
+  --muted:    #737373;
+  --mind:     #e1306c;
+  --wellness: #833ab4;
+  --vault:    #f77737;
+  --life:     #405de6;
+  --journal:  #fd1d1d;
   --gold:     #eab308;
-  --gradient: linear-gradient(135deg, #8b5cf6, #3b82f6);
+  --gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
 
   --font:         'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-display: 'Lora', Georgia, serif;

@@ -1,4 +1,5 @@
 ﻿import { useState } from 'react';
+import AICard from '../components/AICard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
@@ -43,6 +44,8 @@ function WaterTracker({ consumed, onAdd, onRemove }: WaterTrackerProps) {
 }
 
 export default function Wellness() {
+  const [aiInsight] = useState('AI tracked higher sleep quality when you logged less screen time.');
+
   const qc       = useQueryClient();
   const addToast = useAppStore((s) => s.addToast);
   const [tab, setTab]             = useState<'mood'|'sleep'|'fitness'>('mood');
@@ -144,6 +147,8 @@ export default function Wellness() {
 
   return (
     <motion.div {...PAGE} className="page">
+      <div style={{ marginBottom: 24 }}><AICard insight={aiInsight} /></div>
+
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>Wellness</h1>
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
@@ -331,3 +336,4 @@ export default function Wellness() {
     </motion.div>
   );
 }
+

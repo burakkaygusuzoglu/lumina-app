@@ -10,16 +10,18 @@ import ImageUpload from '../components/ImageUpload';
 const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
 
 const TYPES = [
-  { key: '',            label: 'All',        icon: ''  },
-  { key: 'note',        label: 'Note',       icon: '' },
-  { key: 'idea',        label: 'Idea',       icon: '' },
-  { key: 'experience',  label: 'Experience', icon: '' },
-  { key: 'dream',       label: 'Dream',      icon: '' },
-  { key: 'goal',        label: 'Goal',       icon: '' },
-  { key: 'gratitude',   label: 'Gratitude',  icon: '' },
+  { key: '',            label: 'All',        icon: '◈',  color: 'var(--text)'     },
+  { key: 'note',        label: 'Note',       icon: '◻',  color: '#60a5fa'         },
+  { key: 'idea',        label: 'Idea',       icon: '⚡',  color: '#fbbf24'         },
+  { key: 'experience',  label: 'Experience', icon: '🌟',  color: '#34d399'         },
+  { key: 'dream',       label: 'Dream',      icon: '🌙',  color: '#a78bfa'         },
+  { key: 'goal',        label: 'Goal',       icon: '🎯',  color: '#f87171'         },
+  { key: 'gratitude',   label: 'Gratitude',  icon: '✦',  color: '#e2b96a'         },
 ];
 
-const TYPE_ICON: Record<string, string> = { note: '', idea: '', experience: '', dream: '', goal: '', gratitude: '' };
+const TYPE_ICON: Record<string, string> = { note: '◻', idea: '⚡', experience: '🌟', dream: '🌙', goal: '🎯', gratitude: '✦' };
+const TYPE_COLOR: Record<string, string> = { note: '#60a5fa', idea: '#fbbf24', experience: '#34d399', dream: '#a78bfa', goal: '#f87171', gratitude: '#e2b96a' };
+const TYPE_BG: Record<string, string> = { note: 'rgba(96,165,250,0.12)', idea: 'rgba(251,191,36,0.12)', experience: 'rgba(52,211,153,0.12)', dream: 'rgba(167,139,250,0.12)', goal: 'rgba(248,113,113,0.12)', gratitude: 'rgba(226,185,106,0.12)' };
 
 const MOOD_EMOJIS = ['', '', '', '', '', '', '', '', '', ''];
 
@@ -179,7 +181,10 @@ function MemoryForm({ initial, onClose }: NewMemorySheetProps) {
   );
 }
 
+import AICard from '../components/AICard';
+
 export default function Mind() {
+  const [pageInsight] = useState('AI notices a trend of calmness in your recent memory logs.');
   const qc       = useQueryClient();
   const addToast = useAppStore((s) => s.addToast);
   const [search,   setSearch]   = useState('');
@@ -217,7 +222,7 @@ export default function Mind() {
       const { data } = await api.post('/ai/chat', {
         message: `Reflect on this memory and give me a brief, meaningful insight (2-3 sentences): "${mem.content}"`,
       });
-      setAiInsight((prev) => ({ ...prev, [mem.id]: data.response ?? data.message }));
+      setAiInsight((prev) => ({ ...prev, [mem.id]: data.reply ?? data.response ?? data.message }));
     } catch {
       setAiInsight((prev) => ({ ...prev, [mem.id]: 'Could not generate insight.' }));
     } finally {
@@ -236,6 +241,9 @@ export default function Mind() {
 
   return (
     <motion.div {...PAGE} className="page">
+      <div style={{ marginBottom: 24 }}>
+        <AICard insight={pageInsight} />
+      </div>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
@@ -252,15 +260,35 @@ export default function Mind() {
         style={{ marginBottom: 12 }}
       />
 
-      {/* Type filter chips */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8, marginBottom: 16, scrollbarWidth: 'none' }}>
-        {TYPES.map((t) => (
-          <button key={t.key} onClick={() => setTypeFilter(t.key)}
-            className={`chip${typeFilter === t.key ? ' active' : ''}`} style={{ flexShrink: 0 }}>
-            {t.icon} {t.label}
-          </button>
-        ))}
-      </div>
+      {/* Enhanced Apple-style Segmentation */}
+        <div style={{
+            display: 'flex', gap: 4, overflowX: 'auto', padding: '4px', marginBottom: 20, 
+            background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)',
+            scrollbarWidth: 'none'
+        }}>
+          {TYPES.map((t) => {
+            const active = typeFilter === t.key;
+            const col = t.color;
+            return (
+              <button 
+                key={t.key} 
+                onClick={() => setTypeFilter(t.key)}
+                style={{ 
+                  flexShrink: 0, padding: '8px 14px', borderRadius: 12, border: 'none',
+                  background: active ? col : 'transparent',
+                  color: active ? (t.key === 'idea' ? '#1a1a1a' : '#fff') : 'var(--text2)',
+                  fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5,
+                  transition: 'all 0.2s',
+                  boxShadow: active ? `0 3px 12px ${col}40` : 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <span>{t.icon}</span> 
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
 
       {/* Memory list */}
       {isLoading ? (
@@ -285,6 +313,7 @@ export default function Mind() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ delay: i * 0.03 }}
                 className="card card-hover"
+                style={{ borderLeft: `3px solid ${TYPE_COLOR[mem.memory_type ?? ''] ?? 'var(--border)'}`, backgroundImage: `linear-gradient(135deg, ${TYPE_BG[mem.memory_type ?? ''] ?? 'transparent'}, transparent 70%)` }}
               >
                 {/* Photo */}
                 {mem.photo_url && (
@@ -293,7 +322,7 @@ export default function Mind() {
 
                 {/* Header row */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
-                  <span style={{ fontSize: 20 }}>{TYPE_ICON[mem.memory_type ?? ''] ?? ''}</span>
+                  <span style={{ fontSize: 20 }}>{TYPE_ICON[mem.memory_type ?? ''] ?? '◻'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {mem.title && <p style={{ fontSize: 15, fontWeight: 700, marginBottom: 3 }}>{mem.title}</p>}
                     <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -389,3 +418,5 @@ export default function Mind() {
     </motion.div>
   );
 }
+
+

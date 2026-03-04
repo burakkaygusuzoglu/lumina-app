@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+﻿import { useState, useRef } from 'react';
+import AICard from '../components/AICard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../lib/api';
@@ -10,6 +11,8 @@ import ConfirmModal from '../components/ConfirmModal';
 const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
 
 export default function Profile() {
+  const [aiInsight] = useState('AI notes you have been consistently active this week!');
+
   const navigate  = useNavigate();
   const user      = useAuthStore((s) => s.user);
   const logout    = useAuthStore((s) => s.logout);
@@ -26,7 +29,7 @@ export default function Profile() {
     mutationFn: () => api.put('/auth/profile', { full_name: name }).then((r) => r.data),
     onSuccess: (data) => {
       useAuthStore.getState().setUser(data);
-      addToast('success', 'Profile updated ✓');
+      addToast('success', 'Profile updated âœ“');
       setEditing(false);
     },
     onError: () => addToast('error', 'Failed to update profile'),
@@ -70,7 +73,7 @@ export default function Profile() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      addToast('success', 'Data exported successfully! 📦');
+      addToast('success', 'Data exported successfully! ğŸ“¦');
     } catch (error) {
       addToast('error', 'Export failed');
     }
@@ -91,7 +94,7 @@ export default function Profile() {
           const data = JSON.parse(contents);
           console.log("Importing data:", data);
           // In a real scenario, this would send mapped data to /import endpoint
-          addToast('success', 'Data imported successfully! ✨ Refetching...');
+          addToast('success', 'Data imported successfully! âœ¨ Refetching...');
         } catch (err) {
           addToast('error', 'Invalid file format');
         }
@@ -110,6 +113,8 @@ export default function Profile() {
 
   return (
     <motion.div {...PAGE} className="page">
+      <div style={{ marginBottom: 24 }}><AICard insight={aiInsight} /></div>
+
       {/* Avatar + name */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28, paddingTop: 8 }}>
         <div style={{ position: 'relative', marginBottom: 16 }}>
@@ -132,7 +137,7 @@ export default function Profile() {
             onClick={() => fileRef.current?.click()}
             style={{ position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: 13, background: 'var(--surface2)', border: '2px solid var(--bg)', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            ✎
+            âœ
           </button>
           <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
         </div>
@@ -140,14 +145,14 @@ export default function Profile() {
         {editing ? (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%', maxWidth: 260 }}>
             <input className="field" value={name} onChange={(e) => setName(e.target.value)} style={{ textAlign: 'center', fontSize: 16 }} autoFocus />
-            <button className="btn-icon" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} style={{ width: 36, height: 36, color: 'var(--wellness)' }}>✓</button>
-            <button className="btn-icon" onClick={() => setEditing(false)} style={{ width: 36, height: 36 }}>✕</button>
+            <button className="btn-icon" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending} style={{ width: 36, height: 36, color: 'var(--wellness)' }}>âœ“</button>
+            <button className="btn-icon" onClick={() => setEditing(false)} style={{ width: 36, height: 36 }}>âœ•</button>
           </div>
         ) : (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <h2 style={{ fontSize: 22, fontWeight: 800 }}>{user?.full_name || 'Lumina User'}</h2>
-              <button className="btn-icon" onClick={() => setEditing(true)} style={{ width: 28, height: 28, fontSize: 12 }}>✎</button>
+              <button className="btn-icon" onClick={() => setEditing(true)} style={{ width: 28, height: 28, fontSize: 12 }}>âœ</button>
             </div>
             <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>{user?.email}</p>
           </>
@@ -160,15 +165,15 @@ export default function Profile() {
         <div className="card">
           <p className="section-label" style={{ marginBottom: 12 }}>ACCOUNT</p>
           {[
-            { icon: '⚙️', label: 'Settings', action: () => navigate('/settings') },
-            { icon: '📊', label: 'Export My Data', action: handleExportData },
-            { icon: '📥', label: 'Import Data', action: handleImportData },
+            { icon: 'âš™ï¸', label: 'Settings', action: () => navigate('/settings') },
+            { icon: 'ğŸ“Š', label: 'Export My Data', action: handleExportData },
+            { icon: 'ğŸ“¥', label: 'Import Data', action: handleImportData },
           ].map((item) => (
             <button key={item.label} onClick={item.action}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid var(--border)', color: 'var(--text)', textAlign: 'left' }}>
               <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>{item.icon}</span>
               <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{item.label}</span>
-              <span style={{ color: 'var(--muted)' }}>›</span>
+              <span style={{ color: 'var(--muted)' }}>â€º</span>
             </button>
           ))}
         </div>
@@ -178,21 +183,21 @@ export default function Profile() {
           <p className="section-label" style={{ marginBottom: 12, color: 'var(--journal)' }}>DANGER ZONE</p>
           <button onClick={() => setShowLogout(true)}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid var(--border)', color: 'var(--text)', textAlign: 'left' }}>
-            <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>🚪</span>
+            <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>ğŸšª</span>
             <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>Sign Out</span>
-            <span style={{ color: 'var(--muted)' }}>›</span>
+            <span style={{ color: 'var(--muted)' }}>â€º</span>
           </button>
           <button onClick={() => setShowDelete(true)}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--journal)', textAlign: 'left' }}>
-            <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>🗑</span>
+            <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>ğŸ—‘</span>
             <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>Delete Account</span>
-            <span>›</span>
+            <span>â€º</span>
           </button>
         </div>
 
         {/* App version */}
         <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
-          Lumina Life OS v2.0 · Built with ✦
+          Lumina Life OS v2.0 Â· Built with âœ¦
         </p>
       </div>
 
@@ -210,3 +215,4 @@ export default function Profile() {
     </motion.div>
   );
 }
+

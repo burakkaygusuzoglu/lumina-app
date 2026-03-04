@@ -1,4 +1,5 @@
 ﻿import { useState, useRef } from 'react';
+import AICard from '../components/AICard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
@@ -97,6 +98,8 @@ function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
 }
 
 export default function Health() {
+  const [aiInsight] = useState('AI suggests drinking an extra glass of water after your last meal.');
+
   const qc       = useQueryClient();
   const addToast = useAppStore((s) => s.addToast);
   const fileRef  = useRef<HTMLInputElement>(null);
@@ -177,6 +180,8 @@ export default function Health() {
 
   return (
     <motion.div {...PAGE} className="page">
+      <div style={{ marginBottom: 24 }}><AICard insight={aiInsight} /></div>
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>Health</h1>
@@ -364,3 +369,4 @@ export default function Health() {
     </motion.div>
   );
 }
+

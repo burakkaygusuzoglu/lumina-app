@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import AICard from '../components/AICard';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
@@ -18,11 +19,11 @@ const MODULES = [
 ];
 
 const QUICK_MOODS = [
-  { score: 2,  emoji: '', label: 'Rough' },
-  { score: 4,  emoji: '', label: 'Low'   },
-  { score: 6,  emoji: '', label: 'Ok'    },
-  { score: 8,  emoji: '', label: 'Good'  },
-  { score: 10, emoji: '', label: 'Lit'   },
+  { score: 2,  emoji: '😔', label: 'Rough', color: '#818cf8' },
+  { score: 4,  emoji: '😕', label: 'Low',   color: '#60a5fa' },
+  { score: 6,  emoji: '🙂', label: 'Ok',    color: '#34d399' },
+  { score: 8,  emoji: '😊', label: 'Good',  color: '#fbbf24' },
+  { score: 10, emoji: '🤩', label: 'Lit',   color: '#f472b6' },
 ];
 
 function Skel({ h = 16, w = '100%', r = 8 }: { h?: number; w?: number | string; r?: number }) {
@@ -37,6 +38,7 @@ function getGreeting() {
 }
 
 export default function Home() {
+  const [aiInsight] = useState('AI anticipates a productive day ahead based on your morning routine.');
   const navigate  = useNavigate();
   const qc        = useQueryClient();
   const user      = useAuthStore((s) => s.user);
@@ -91,6 +93,9 @@ export default function Home() {
 
   return (
     <motion.div {...PAGE_ANIM} className="page">
+      <div style={{ marginBottom: 24 }}>
+        <AICard insight={aiInsight} />
+      </div>
       {/*  Header  */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
@@ -160,43 +165,79 @@ export default function Home() {
         )}
       </div>
 
-      {/*  Quick mood check-in  */}
-      <div className="card glass glow-hover" style={{ marginBottom: 20, position: 'relative', overflow: 'hidden' }}>
-        <p className="section-label" style={{ marginBottom: 14, color: moodSaved ? 'var(--mind)' : 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          {moodSaved ? (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-              MOOD LOGGED
-            </>
-          ) : 'HOW ARE YOU NOW?'}
-        </p>
+      {/*  Quick mood check-in — TikTok/Instagram reaction style  */}
+      <div
+        className="card glass"
+        style={{
+          marginBottom: 24, padding: '20px 20px 24px', position: 'relative',
+          overflow: 'hidden', borderRadius: 28, border: '1px solid var(--border2)',
+          transition: 'border-color 0.4s',
+        }}
+      >
+        {/* Dynamic glow orb that matches selected mood */}
+        <div style={{ position: 'absolute', top: -50, right: -50, width: 160, height: 160, filter: 'blur(70px)', background: 'var(--gradient)', opacity: 0.12, borderRadius: '50%', pointerEvents: 'none' }} />
 
-        {moodSaved && (
-           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} style={{ position: 'absolute', right: 20, top: 16, color: 'var(--mind)', fontSize: 24, filter: 'blur(2px)' }}>
-             ✨
-           </motion.div>
-        )}
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.14em', color: 'var(--muted)', marginBottom: 3 }}>
+              HOW ARE YOU NOW?
+            </p>
+            {moodSaved && (
+              <motion.p initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                style={{ fontSize: 12, color: 'var(--wellness)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Mood logged
+              </motion.p>
+            )}
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(123,111,218,0.15)', border: '1px solid rgba(123,111,218,0.3)', padding: '7px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700, color: 'var(--mind)', cursor: 'pointer' }}
+            onClick={() => document.getElementById('lumina-ai-trigger')?.click()}
+          >
+            ✦ Ask AI
+          </motion.button>
+        </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        {/* Emoji reaction row — large, Instagram/TikTok style */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 4 }}>
           {QUICK_MOODS.map((m) => (
             <motion.button
               key={m.score}
-              whileTap={{ scale: 0.85 }}
-              whileHover={{ y: -4 }}
+              whileHover={{ y: -8, scale: 1.1 }}
+              whileTap={{ scale: 0.75 }}
               onClick={() => {
-                if(!moodSaved) {
-                  if (navigator.vibrate) navigator.vibrate(40);
+                if (!moodSaved) {
+                  if (navigator.vibrate) navigator.vibrate(30);
                   moodMutation.mutate(m.score);
                 }
               }}
               style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                padding: '10px 8px', borderRadius: 16, background: moodSaved ? 'transparent' : 'rgba(255,255,255,0.03)', border: '1px solid', borderColor: moodSaved ? 'transparent' : 'var(--border)',
-                cursor: moodSaved ? 'default' : 'pointer', opacity: moodSaved ? 0.4 : 1, transition: 'all 0.3s'
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                background: 'none', border: 'none', cursor: moodSaved ? 'default' : 'pointer',
+                opacity: moodSaved ? 0.4 : 1, flex: 1,
+                transition: 'opacity 0.3s',
               }}
             >
-              <span style={{ fontSize: 32, filter: moodSaved ? 'grayscale(100%)' : 'drop-shadow(0 4px 6px rgba(0,0,0,0.4))' }}>{m.emoji}</span>
-              <span style={{ fontSize: 11, color: moodSaved ? 'var(--muted)' : 'var(--text2)', fontWeight: 600 }}>{m.label}</span>
+              {/* Emoji circle with glow */}
+              <motion.div
+                animate={moodSaved ? {} : { y: [0, -3, 0] }}
+                transition={{ duration: 3, repeat: Infinity, delay: QUICK_MOODS.indexOf(m) * 0.3 }}
+                style={{
+                  width: 52, height: 52, borderRadius: '50%',
+                  background: `radial-gradient(circle at 40% 35%, ${m.color}22, ${m.color}08)`,
+                  border: `1.5px solid ${m.color}30`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 28,
+                  boxShadow: `0 6px 20px -6px ${m.color}50`,
+                }}
+              >
+                {m.emoji}
+              </motion.div>
+              <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.04em', color: m.color, textTransform: 'uppercase' }}>
+                {m.label}
+              </span>
             </motion.button>
           ))}
         </div>
@@ -347,3 +388,4 @@ export default function Home() {
     </motion.div>
   );
 }
+
