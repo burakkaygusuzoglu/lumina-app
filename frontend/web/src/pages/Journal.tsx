@@ -9,9 +9,10 @@ import ConfirmModal from '../components/ConfirmModal';
 
 const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
 
-const MOODS = ['','','','','','','',''];
+const MOODS = ['😞','😕','😐','🙂','😊','😄','🥰','🤩'];
 const CATS  = ['reflection','gratitude','goals','memories','emotions','growth'];
-const MOOD_COLORS = ['#c4607a','#c47a60','#6b7280','#3daa86','#3daa86','#e2b96a','#7b6fda','#7b6fda'];
+const MOOD_LABELS = ['Rough','Low','Meh','Okay','Good','Great','Lovely','Amazing'];
+const MOOD_COLORS = ['#c4607a','#c47a60','#6b7280','#60a5fa','#34d399','#e2b96a','#a78bfa','#7b6fda'];
 
 function Skel() {
   return (
@@ -296,34 +297,49 @@ export default function Journal() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {entries.map((entry, i) => (
+          {entries.map((entry, i) => {
+            const moodIdx   = Math.min((entry.mood ?? 1) - 1, 7);
+            const moodColor = MOOD_COLORS[moodIdx];
+            const wordCount = entry.content.trim().split(/\s+/).filter(Boolean).length;
+            return (
             <motion.div
               key={entry.id}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
               className="card"
+              style={{ borderLeft: `3px solid ${moodColor}`, paddingLeft: 16 }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 22 }}>{MOODS[Math.min((entry.mood ?? 1) - 1, 7)] ?? ''}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{
+                    width: 38, height: 38, borderRadius: 12, flexShrink: 0,
+                    background: `${moodColor}18`,
+                    border: `1.5px solid ${moodColor}40`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+                  }}>
+                    {MOODS[moodIdx]}
+                  </span>
                   <div>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: MOOD_COLORS[Math.min((entry.mood ?? 1) - 1, 7)] }}>
-                      Mood {entry.mood ?? ''}/8
+                    <p style={{ fontSize: 13, fontWeight: 700, color: moodColor }}>
+                      {MOOD_LABELS[moodIdx]}
                     </p>
                     <p style={{ fontSize: 11, color: 'var(--muted)' }}>
-                      {new Date(entry.created_at).toLocaleDateString('en', { day: 'numeric', month: 'short' })}
+                      {new Date(entry.created_at).toLocaleDateString('en', { weekday: 'short', day: 'numeric', month: 'short' })}
                     </p>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button className="btn-icon" onClick={() => setEditEntry({ ...entry })} style={{ width: 30, height: 30, fontSize: 12 }}></button>
-                  <button className="btn-icon" onClick={() => setDeleteId(entry.id)} style={{ width: 30, height: 30, fontSize: 12, color: 'var(--journal)' }}></button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 10, color: 'var(--muted)', padding: '2px 7px', borderRadius: 10, background: 'var(--surface2)', marginRight: 2 }}>
+                    {wordCount}w
+                  </span>
+                  <button className="btn-icon" onClick={() => setEditEntry({ ...entry })} style={{ width: 30, height: 30, fontSize: 12 }}>✎</button>
+                  <button className="btn-icon" onClick={() => setDeleteId(entry.id)} style={{ width: 30, height: 30, fontSize: 12, color: 'var(--journal)' }}>✕</button>
                 </div>
               </div>
 
               <p style={{
-                fontSize: 14, lineHeight: 1.6, marginTop: 10, color: 'var(--text2)',
+                fontSize: 14, lineHeight: 1.6, marginTop: 12, color: 'var(--text2)',
                 display: expandedId === entry.id ? 'block' : '-webkit-box',
                 WebkitLineClamp: expandedId === entry.id ? undefined : 3,
                 WebkitBoxOrient: 'vertical' as const,
@@ -337,17 +353,26 @@ export default function Journal() {
                   onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
                   style={{ background: 'none', border: 'none', color: 'var(--journal)', fontSize: 12, fontWeight: 600, cursor: 'pointer', marginTop: 6, padding: 0 }}
                 >
-                  {expandedId === entry.id ? 'Show less ' : 'Read more '}
+                  {expandedId === entry.id ? '↑ Show less' : '↓ Read more'}
                 </button>
               )}
 
               {entry.tags && entry.tags.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
-                  {entry.tags.map((t) => <span key={t} className="chip" style={{ fontSize: 11, padding: '3px 8px' }}>#{t}</span>)}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 10 }}>
+                  {entry.tags.map((t) => (
+                    <span key={t} style={{
+                      padding: '3px 9px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                      background: 'rgba(196,96,122,0.1)', border: '1px solid rgba(196,96,122,0.2)',
+                      color: 'var(--journal)',
+                    }}>
+                      #{t}
+                    </span>
+                  ))}
                 </div>
               )}
             </motion.div>
-          ))}
+            );
+          })}
         </div>
       )}
 

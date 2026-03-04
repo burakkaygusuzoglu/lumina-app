@@ -109,7 +109,7 @@ export default function Life() {
       const { data } = await api.post('/ai/chat', {
         message: `I have these pending tasks: ${pendingTitles || 'no tasks yet'}. Give me a brief focus tip and suggest which to prioritize first (2-3 sentences max).`,
       });
-      setAiTip(data.response ?? data.message);
+      setAiTip(data.reply ?? data.response ?? data.message);
     } catch {
       setAiTip('Focus on your most important task first. Break it into smaller steps for momentum.');
     } finally {
@@ -148,9 +148,9 @@ export default function Life() {
         {Object.entries(PRIORITY_MAP).map(([key, val]) => {
           const count = tasks.filter((t) => t.priority === key && t.status === 'pending').length;
           return (
-            <div key={key} className="card glass glow-hover" style={{ flex: 1, padding: '8px 6px', textAlign: 'center' }}>
-              <p style={{ fontSize: 18, fontWeight: 800, color: val.color }}>{count}</p>
-              <p style={{ fontSize: 10, color: 'var(--muted)' }}>{val.label}</p>
+            <div key={key} className="card" style={{ flex: 1, padding: '10px 6px', textAlign: 'center', borderTop: `2px solid ${val.color}` }}>
+              <p style={{ fontSize: 20, fontWeight: 800, color: val.color }}>{count}</p>
+              <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600 }}>{val.label}</p>
             </div>
           );
         })}
@@ -176,11 +176,11 @@ export default function Life() {
       </div>
 
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div className="tab-bar">
         {(['today','upcoming','all'] as const).map((t) => (
           <button key={t} onClick={() => { triggerHaptic('light'); setTab(t); }}
-            className={`chip${tab === t ? ' active' : ''}`} style={{ flex: 1, justifyContent: 'center', textTransform: 'capitalize' }}>
-            {t === 'today' ? 'Today' : t === 'upcoming' ? 'Upcoming' : 'All'}
+            className={`tab-item${tab === t ? ' active' : ''}`}>
+            {t === 'today' ? '⚡ Today' : t === 'upcoming' ? '📅 Soon' : '✦ All'}
           </button>
         ))}
       </div>
@@ -201,7 +201,7 @@ export default function Life() {
             {filtered.map((task, i) => (
               <motion.div key={task.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20, height: 0 }} transition={{ delay: i * 0.03 }}
-                className="card glass glow-hover" style={{ opacity: task.status === 'completed' ? 0.6 : 1, padding: '16px' }}>
+                className="card glass glow-hover" style={{ opacity: task.status === 'completed' ? 0.5 : 1, padding: '16px', borderLeft: `3px solid ${PRIORITY_MAP[task.priority ?? 'medium']?.color ?? 'var(--border)'}` }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                   {/* Checkbox */}
                   <motion.button

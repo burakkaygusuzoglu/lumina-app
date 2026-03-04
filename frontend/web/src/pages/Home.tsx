@@ -137,7 +137,7 @@ export default function Home() {
       >
         <div style={{ position: 'absolute', top: -20, right: -20, fontSize: 80, opacity: 0.06 }}>✨</div>
         <p style={{ fontSize: 10, fontWeight: 800, color: 'var(--mind)', letterSpacing: '0.12em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-           <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: 3, background: 'var(--mind)', boxShadow: '0 0 8px var(--mind)' }} />
+           <span className="pulse-dot" style={{ background: 'var(--mind)' }} />
            AI BRIEFING
         </p>
         {greetLoading ? (
@@ -250,28 +250,33 @@ export default function Home() {
           <motion.div
             key={mod.path}
             className="module-card-img"
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate(mod.path)}
+            style={{ boxShadow: `0 4px 20px -8px ${mod.color}60` }}
           >
             <img src={mod.img} alt={mod.label} loading="lazy" />
-            <div className="overlay">
-              <p style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{mod.label}</p>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>{mod.sub}</p>
+            <div className="overlay" style={{ background: `linear-gradient(to top, ${mod.color}cc 0%, rgba(0,0,0,0.3) 100%)` }}>
+              <p style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{mod.label}</p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{mod.sub}</p>
             </div>
+            <div style={{ position: 'absolute', top: 8, right: 8, width: 6, height: 6, borderRadius: '50%', background: mod.color, boxShadow: `0 0 8px ${mod.color}` }} />
           </motion.div>
         ))}
         {/* Health card spans full width */}
         <motion.div
           className="module-card-img"
-          style={{ gridColumn: 'span 1' }}
+          style={{ gridColumn: 'span 1', boxShadow: '0 4px 20px -8px rgba(61,170,134,0.4)' }}
+          whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={() => navigate('/health')}
         >
           <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&q=80" alt="Health" loading="lazy" />
-          <div className="overlay">
-            <p style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>Health</p>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>Nutrition & AI</p>
+          <div className="overlay" style={{ background: 'linear-gradient(to top, rgba(61,170,134,0.8) 0%, rgba(0,0,0,0.3) 100%)' }}>
+            <p style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>Health</p>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>Nutrition & AI</p>
           </div>
+          <div style={{ position: 'absolute', top: 8, right: 8, width: 6, height: 6, borderRadius: '50%', background: 'var(--wellness)', boxShadow: '0 0 8px var(--wellness)' }} />
         </motion.div>
       </div>
 
@@ -293,21 +298,24 @@ export default function Home() {
                 transition={{ delay: i * 0.05 }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '13px 16px',
+                  padding: '14px 16px',
                   borderBottom: i < todayTasks.length - 1 ? '1px solid var(--border)' : 'none',
+                  borderLeft: `3px solid ${task.priority === 'urgent' ? 'var(--journal)' : task.priority === 'high' ? 'var(--vault)' : task.priority === 'medium' ? 'var(--gold)' : 'var(--wellness)'}`,
                 }}
               >
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.75 }}
                   onClick={() => taskCompleteMutation.mutate(task.id)}
                   style={{
-                    width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                    width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
                     border: `2px solid ${task.priority === 'urgent' ? 'var(--journal)' : task.priority === 'high' ? 'var(--vault)' : 'var(--border2)'}`,
                     background: 'none', cursor: 'pointer',
+                    transition: 'background 0.2s',
                   }}
                 />
                 <span style={{ fontSize: 14, color: 'var(--text)', flex: 1 }}>{task.title}</span>
-                {task.priority === 'urgent' && <span style={{ fontSize: 10, color: 'var(--journal)', fontWeight: 700 }}>URGENT</span>}
-                {task.priority === 'high'   && <span style={{ fontSize: 10, color: 'var(--vault)',   fontWeight: 700 }}>HIGH</span>}
+                {task.priority === 'urgent' && <span style={{ fontSize: 10, color: 'var(--journal)', fontWeight: 800, padding: '2px 7px', borderRadius: 10, background: 'rgba(196,96,122,0.12)' }}>URGENT</span>}
+                {task.priority === 'high'   && <span style={{ fontSize: 10, color: 'var(--vault)',   fontWeight: 800, padding: '2px 7px', borderRadius: 10, background: 'rgba(212,134,74,0.12)'  }}>HIGH</span>}
               </motion.div>
             ))}
           </div>
@@ -362,24 +370,30 @@ export default function Home() {
             </button>
           </div>
           <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', marginBottom: 20 }}>
-            {recentMems.map((mem) => (
-              <motion.div
-                key={mem.id}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => navigate('/mind')}
-                style={{
-                  flexShrink: 0, width: 160, padding: '14px', borderRadius: 'var(--r-lg)',
-                  background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer',
-                }}
-              >
-                <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 6, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {mem.title || 'Memory'}
-                </p>
-                <p style={{ fontSize: 11, color: 'var(--text2)', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {mem.content}
-                </p>
-              </motion.div>
-            ))}
+            {recentMems.map((mem) => {
+              const typeColors: Record<string, string> = { note: '#60a5fa', idea: '#fbbf24', experience: '#34d399', dream: '#a78bfa', goal: '#f87171', gratitude: '#e2b96a' };
+              const tColor = typeColors[mem.memory_type ?? ''] ?? 'var(--mind)';
+              return (
+                <motion.div
+                  key={mem.id}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate('/mind')}
+                  style={{
+                    flexShrink: 0, width: 155, padding: '14px', borderRadius: 16,
+                    background: 'var(--surface)', border: `1px solid var(--border)`,
+                    borderTop: `2px solid ${tColor}`,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <p style={{ fontSize: 10, fontWeight: 700, color: tColor, marginBottom: 6, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                    {mem.memory_type ?? 'memory'}
+                  </p>
+                  <p style={{ fontSize: 11, color: 'var(--text2)', lineHeight: 1.45, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {mem.content}
+                  </p>
+                </motion.div>
+              );
+            })}
           </div>
         </>
       )}

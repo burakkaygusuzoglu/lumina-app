@@ -18,6 +18,7 @@ const CATS = [
 ];
 
 const CAT_ICON: Record<string, string> = { password: '🔑', note: '📝', card: '💳', document: '📄' };
+const CAT_COLOR: Record<string, string> = { password: '#d4864a', note: '#7b6fda', card: '#4a8fd4', document: '#3daa86' };
 
 // Global key reference for active session to avoid async await everywhere
 let e2eKey: CryptoKey | null = null;
@@ -335,11 +336,12 @@ export default function Vault() {
             {filtered.map((item, i) => (
               <motion.div key={item.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.03 }}
-                className="card card-hover">
+                className="card card-hover" style={{ borderLeft: `3px solid ${CAT_COLOR[item.category] ?? 'var(--border)'}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{
                     width: 42, height: 42, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0,
-                    background: 'rgba(212,134,74,0.1)',
+                    background: `${CAT_COLOR[item.category] ?? 'var(--vault)'}18`,
+                    border: `1px solid ${CAT_COLOR[item.category] ?? 'var(--vault)'}30`,
                   }}>
                     {CAT_ICON[item.category] ?? ''}
                   </div>

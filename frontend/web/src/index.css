@@ -1,22 +1,22 @@
-﻿/* ── Lumina Life OS — Instagram Noir Premium Theme ── */
+﻿/* ── Lumina Life OS — Premium Dark Theme ── */
 
 :root {
-  --bg:       #000000;
-  --bg2:      #0a0a0a;
-  --surface:  #121212;
-  --surface2: #262626;
-  --border:   rgba(255,255,255,0.15);
-  --border2:  rgba(255,255,255,0.25);
-  --text:     #ffffff;
-  --text2:    #a8a8a8;
-  --muted:    #737373;
-  --mind:     #e1306c;
-  --wellness: #833ab4;
-  --vault:    #f77737;
-  --life:     #405de6;
-  --journal:  #fd1d1d;
-  --gold:     #eab308;
-  --gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  --bg:       #0a0a0f;
+  --bg2:      #0f0f17;
+  --surface:  #141420;
+  --surface2: #1e1e2e;
+  --border:   rgba(255,255,255,0.08);
+  --border2:  rgba(255,255,255,0.15);
+  --text:     #f0f0ff;
+  --text2:    #9898b8;
+  --muted:    #606080;
+  --mind:     #7b6fda;
+  --wellness: #3daa86;
+  --vault:    #d4864a;
+  --life:     #4a8fd4;
+  --journal:  #c4607a;
+  --gold:     #e2b96a;
+  --gradient: linear-gradient(135deg, #7b6fda 0%, #3daa86 100%);
 
   --font:         'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-display: 'Lora', Georgia, serif;
@@ -107,15 +107,18 @@ input, textarea, select { font-family: var(--font); outline: none; border: none;
   border-radius: var(--r-lg);
   padding: 18px;
   border: 1px solid var(--border);
-  transition: border-color 0.2s;
+  transition: border-color 0.25s, box-shadow 0.25s;
 }
-.card-hover:hover { border-color: var(--border2); }
+.card-hover:hover {
+  border-color: var(--border2);
+  box-shadow: 0 4px 24px rgba(123,111,218,0.08);
+}
 
 /* ── Field ── */
 .field {
   width: 100%;
   background: var(--surface2);
-  border: 1.5px solid var(--border);
+  border: 1.5px solid rgba(255,255,255,0.08);
   border-radius: var(--r-md);
   padding: 13px 16px;
   font-size: 15px;
@@ -123,8 +126,8 @@ input, textarea, select { font-family: var(--font); outline: none; border: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .field:focus {
-  border-color: var(--mind);
-  box-shadow: 0 0 0 3px rgba(123,111,218,0.15);
+  border-color: rgba(123,111,218,0.6);
+  box-shadow: 0 0 0 3px rgba(123,111,218,0.12);
 }
 .field::placeholder { color: var(--muted); }
 textarea.field { resize: vertical; }
@@ -142,11 +145,12 @@ textarea.field { resize: vertical; }
   border: none;
   cursor: pointer;
   letter-spacing: 0.02em;
-  transition: opacity 0.2s, transform 0.15s;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(123,111,218,0.3);
 }
-.btn-primary:hover { opacity: 0.88; }
+.btn-primary:hover { opacity: 0.9; box-shadow: 0 6px 24px rgba(123,111,218,0.4); }
 .btn-primary:active { transform: scale(0.98); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
 
 .btn-secondary {
   padding: 11px 20px;
@@ -469,6 +473,58 @@ input[type="range"]::-webkit-slider-thumb {
 @keyframes bounce {
   0%, 80%, 100% { transform: translateY(0); }
   40%           { transform: translateY(-6px); }
+}
+
+/* ── Pulse dot animation ── */
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.5); opacity: 0.6; }
+}
+.pulse-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  animation: pulse-dot 1.8s ease-in-out infinite;
+}
+
+/* ── Float animation ── */
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-4px); }
+}
+.float { animation: float-y 3s ease-in-out infinite; }
+
+/* ── Priority glow strip ── */
+.priority-urgent { border-left: 3px solid #c4607a !important; }
+.priority-high   { border-left: 3px solid #d4864a !important; }
+.priority-medium { border-left: 3px solid #e2b96a !important; }
+.priority-low    { border-left: 3px solid #3daa86 !important; }
+
+/* ── Tab bar ── */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  background: var(--surface2);
+  border-radius: 14px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+.tab-item {
+  flex: 1; text-align: center;
+  padding: 9px 4px;
+  border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none; background: none;
+  font-family: var(--font);
+  position: relative;
+}
+.tab-item.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 /* ── Star rating ── */

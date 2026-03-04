@@ -159,7 +159,7 @@ export default function Health() {
     try {
       const calorieContext = `Today I've consumed ${totalCals} calories out of ${CALORIE_GOAL} goal.`;
       const { data } = await api.post('/ai/chat', { message: `[Health & Nutrition Context: ${calorieContext}]\n\n${userMsg}` });
-      setAiChatHistory((prev) => [...prev, { role: 'assistant', content: data.response ?? data.message }]);
+      setAiChatHistory((prev) => [...prev, { role: 'assistant', content: data.reply ?? data.response ?? data.message }]);
     } catch {
       setAiChatHistory((prev) => [...prev, { role: 'assistant', content: 'Sorry, I could not get a response right now.' }]);
     } finally {
@@ -203,10 +203,10 @@ export default function Health() {
 
       {/* Meal sections */}
       {byMealType.map(({ type, entries, cals }) => (
-        <div key={type} className="card" style={{ marginBottom: 12 }}>
+        <div key={type} className="card" style={{ marginBottom: 12, borderTop: `2px solid ${MEAL_COLORS[type]}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 20 }}>{MEAL_ICONS[type]}</span>
+              <div style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, background: `${MEAL_COLORS[type]}18`, border: `1px solid ${MEAL_COLORS[type]}30` }}>{MEAL_ICONS[type]}</div>
               <p style={{ fontWeight: 700, fontSize: 14, textTransform: 'capitalize' }}>{type}</p>
             </div>
             <p style={{ fontSize: 13, fontWeight: 700, color: MEAL_COLORS[type] }}>{cals} kcal</p>
@@ -232,8 +232,8 @@ export default function Health() {
         {aiChatHistory.length === 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
             {['Am I eating enough protein?', 'Suggest a healthy dinner', 'How well am I doing today?'].map((s) => (
-              <button key={s} onClick={() => { setAiChatMsg(s); }}
-                className="chip" style={{ fontSize: 12 }}>{s}</button>
+              <motion.button key={s} whileTap={{ scale: 0.94 }} onClick={() => { setAiChatMsg(s); }}
+                style={{ fontSize: 11, fontWeight: 600, padding: '5px 11px', borderRadius: 20, border: '1px solid rgba(61,170,134,0.3)', background: 'rgba(61,170,134,0.08)', color: 'var(--wellness)', cursor: 'pointer', flexShrink: 0, letterSpacing: '0.02em' }}>{s}</motion.button>
             ))}
           </div>
         )}
@@ -286,10 +286,10 @@ export default function Health() {
               {/* Meal type */}
               <div style={{ display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto', scrollbarWidth: 'none' }}>
                 {MEAL_TYPES.map((t) => (
-                  <button key={t} onClick={() => setSelectedMealType(t)}
-                    className={`chip${selectedMealType === t ? ' active' : ''}`} style={{ flexShrink: 0, textTransform: 'capitalize' }}>
+                  <motion.button key={t} whileTap={{ scale: 0.93 }} onClick={() => setSelectedMealType(t)}
+                    style={{ flexShrink: 0, textTransform: 'capitalize', padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: selectedMealType === t ? `1.5px solid ${MEAL_COLORS[t]}` : '1.5px solid var(--border)', background: selectedMealType === t ? `${MEAL_COLORS[t]}22` : 'var(--surface2)', color: selectedMealType === t ? MEAL_COLORS[t] : 'var(--muted)', transition: 'all 0.2s ease' }}>
                     {MEAL_ICONS[t]} {t}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
 

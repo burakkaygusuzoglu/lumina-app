@@ -152,27 +152,27 @@ export default function Wellness() {
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>Wellness</h1>
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <div className="card" style={{ flex: 1, textAlign: 'center', padding: '10px 8px' }}>
-            <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--wellness)' }}>{avgMood}</p>
-            <p style={{ fontSize: 11, color: 'var(--muted)' }}>Avg Mood</p>
+          <div className="card" style={{ flex: 1, textAlign: 'center', padding: '12px 8px', borderTop: '2px solid var(--wellness)' }}>
+            <p style={{ fontSize: 24, fontWeight: 800, color: 'var(--wellness)' }}>{avgMood || '—'}</p>
+            <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.05em' }}>AVG MOOD</p>
           </div>
-          <div className="card" style={{ flex: 1, textAlign: 'center', padding: '10px 8px' }}>
-            <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--life)' }}>{avgSleep}h</p>
-            <p style={{ fontSize: 11, color: 'var(--muted)' }}>Avg Sleep</p>
+          <div className="card" style={{ flex: 1, textAlign: 'center', padding: '12px 8px', borderTop: '2px solid var(--life)' }}>
+            <p style={{ fontSize: 24, fontWeight: 800, color: 'var(--life)' }}>{avgSleep ? `${avgSleep}h` : '—'}</p>
+            <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.05em' }}>AVG SLEEP</p>
           </div>
-          <div className="card" style={{ flex: 1, textAlign: 'center', padding: '10px 8px' }}>
-            <p style={{ fontSize: 22, fontWeight: 800, color: '#5dd7b5' }}>{waterConsumed}/{WATER_GOAL}</p>
-            <p style={{ fontSize: 11, color: 'var(--muted)' }}>Water</p>
+          <div className="card" style={{ flex: 1, textAlign: 'center', padding: '12px 8px', borderTop: '2px solid #5dd7b5' }}>
+            <p style={{ fontSize: 24, fontWeight: 800, color: '#5dd7b5' }}>{waterConsumed}/{WATER_GOAL}</p>
+            <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.05em' }}>WATER</p>
           </div>
         </div>
       </div>
 
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+      <div className="tab-bar">
         {(['mood','sleep','fitness'] as const).map((t, ti) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`chip${tab === t ? ' active' : ''}`} style={{ flex: 1, justifyContent: 'center' }}>
-            {['Mood','Fitness','Appts'][ti]}
+            className={`tab-item${tab === t ? ' active' : ''}`}>
+            {['💚 Mood','🏃 Fitness','📋 Appts'][ti]}
           </button>
         ))}
       </div>
