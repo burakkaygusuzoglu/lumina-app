@@ -72,10 +72,17 @@ export default function AIAssistant() {
   const [input,    setInput]    = useState('');
   const [loading,  setLoading]  = useState(false);
   const bottomRef              = useRef<HTMLDivElement>(null);
+  // Only fetch memories on the first message of each session for speed
+  const memoriesLoaded = useRef(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  // Reset memory cache flag when drawer is closed so next session loads fresh context
+  useEffect(() => {
+    if (!open) memoriesLoaded.current = false;
+  }, [open]);
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
@@ -87,10 +94,12 @@ export default function AIAssistant() {
     const context = ROUTE_CONTEXT[location.pathname] ?? 'Lumina Life OS';
 
     try {
+      const fetchMemories = !memoriesLoaded.current;
+      if (fetchMemories) memoriesLoaded.current = true;
       const { data } = await api.post('/ai/chat', {
         message: `[Context: user is on ${context}]\n\n${text}`,
-        include_memories: true,
-        conversation_history: messages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
+        include_memories: fetchMemories,
+        conversation_history: messages.slice(-6).map((m) => ({ role: m.role, content: m.content })),
       });
       const aiMsg: Message = {
         id:      (Date.now() + 1).toString(),

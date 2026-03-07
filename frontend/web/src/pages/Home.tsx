@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import AICard from '../components/AICard';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
@@ -41,6 +41,8 @@ export default function Home() {
   const firstName = user?.full_name?.split(' ')[0] ?? 'there';
   const addToast  = useAppStore((s) => s.addToast);
   const [moodSaved, setMoodSaved] = useState(false);
+  const [moodSuggestion, setMoodSuggestion] = useState<string | null>(null);
+  const [moodSuggLoading, setMoodSuggLoading] = useState(false);
 
   const { data: tasks = [] } = useQuery<Task[]>({
     queryKey: ['tasks'],
@@ -63,13 +65,34 @@ export default function Home() {
   const moodMutation = useMutation({
     mutationFn: (score: number) =>
       api.post('/wellness/mood', { mood_score: score }).then((r) => r.data),
-    onSuccess: () => {
+    onSuccess: (_data, score) => {
       qc.invalidateQueries({ queryKey: ['mood'] });
       setMoodSaved(true);
       addToast('success', 'Mood logged ');
       setTimeout(() => setMoodSaved(false), 3000);
+      // Fetch AI suggestion based on selected mood
+      const moodData = QUICK_MOODS.find((m) => m.score === score);
+      fetchMoodSuggestion(moodData?.label ?? 'neutral', score);
     },
+    onError: () => addToast('error', 'Failed to log mood'),
   });
+
+  async function fetchMoodSuggestion(label: string, score: number) {
+    setMoodSuggLoading(true);
+    setMoodSuggestion(null);
+    try {
+      const { data } = await api.post('/ai/chat', {
+        message: `I'm feeling ${label} right now (mood score ${score}/10). Give me a single warm, personalised suggestion or encouragement for this moment — keep it to 1-2 sentences.`,
+        include_memories: false,
+        conversation_history: [],
+      });
+      setMoodSuggestion(data.reply ?? data.response ?? data.message ?? '');
+    } catch {
+      // Fail silently — suggestion is a nice-to-have
+    } finally {
+      setMoodSuggLoading(false);
+    }
+  }
 
   const taskCompleteMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/tasks/${id}/complete`).then((r) => r.data),
@@ -208,6 +231,43 @@ export default function Home() {
             </motion.button>
           ))}
         </div>
+
+        {/* AI suggestion after mood selection */}
+        <AnimatePresence>
+          {moodSuggLoading && (
+            <motion.div
+              key="sugg-loading"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              <span style={{ fontSize: 14, color: 'var(--mind)' }}>✦</span>
+              <span style={{ fontSize: 13, color: 'var(--muted)', fontStyle: 'italic' }}>Lumina is thinking...</span>
+            </motion.div>
+          )}
+          {moodSuggestion && !moodSuggLoading && (
+            <motion.div
+              key="sugg-text"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              style={{
+                marginTop: 16,
+                padding: '12px 16px',
+                borderRadius: 16,
+                background: 'rgba(123,111,218,0.1)',
+                border: '1px solid rgba(123,111,218,0.2)',
+                display: 'flex',
+                gap: 10,
+                alignItems: 'flex-start',
+              }}
+            >
+              <span style={{ fontSize: 14, color: 'var(--mind)', flexShrink: 0, marginTop: 1 }}>✦</span>
+              <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.55, margin: 0 }}>{moodSuggestion}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/*  Module cards 2grid  */}

@@ -23,7 +23,6 @@ const triggerHaptic = (type: 'light' | 'medium' | 'heavy' | 'success' = 'light')
 
 const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
   critical: { label: 'Critical', color: '#c4607a' },
-  urgent:  { label: 'Urgent',  color: '#c4607a' },
   high:    { label: 'High',    color: '#d4864a' },
   medium:  { label: 'Medium',  color: '#e2b96a' },
   low:     { label: 'Low',     color: '#3daa86' },

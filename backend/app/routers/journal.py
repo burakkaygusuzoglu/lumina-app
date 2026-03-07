@@ -36,7 +36,7 @@ class JournalEntryCreate(BaseModel):
     """Journal entry creation payload."""
     content: str = Field(..., min_length=1, description="Journal entry text")
     prompt_used: str | None = Field(None, description="The AI prompt that inspired this entry")
-    mood: int | None = Field(None, ge=1, le=5, description="Mood at time of writing")
+    mood: int | None = Field(None, ge=1, le=8, description="Mood at time of writing (1-8)")
     tags: list[str] = Field(default_factory=list)
 
 
