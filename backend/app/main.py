@@ -43,10 +43,35 @@ from app.routers import (  # noqa: E402
     wellness_router,
 )
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)-8s | %(name)s â€” %(message)s",
-)
+
+# ── JSON structured logging ──────────────────────────────────────────────────
+class _JsonFormatter(logging.Formatter):
+    """Emit each log record as a single JSON line — Railway/Datadog-friendly."""
+
+    def format(self, record: logging.LogRecord) -> str:  # type: ignore[override]
+        payload: dict = {
+            "ts":     self.formatTime(record, "%Y-%m-%dT%H:%M:%S"),
+            "level":  record.levelname,
+            "logger": record.name,
+            "msg":    record.getMessage(),
+        }
+        if record.exc_info:
+            payload["exc"] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=False)
+
+
+def _configure_logging() -> None:
+    handler = logging.StreamHandler()
+    handler.setFormatter(_JsonFormatter())
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    root.handlers.clear()
+    root.addHandler(handler)
+    for noisy in ("httpx", "httpcore", "anthropic", "pinecone", "urllib3"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
+
+
+_configure_logging()
 logger = logging.getLogger(__name__)
 
 # â”€â”€ Rate limiter (slowapi) â€” ip-based for public endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

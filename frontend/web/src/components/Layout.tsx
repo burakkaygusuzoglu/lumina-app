@@ -1,6 +1,7 @@
 ﻿/**
  * Layout — premium app shell with iOS-native pill bottom navigation.
  */
+import { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Brain, Activity, Target, BookOpen, User } from 'lucide-react';
@@ -27,6 +28,27 @@ export default function Layout() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const isActive  = (path: string) => location.pathname === path;
+
+  // iOS keyboard avoidance — shrink .page-scroll when virtual keyboard opens
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    function onResize() {
+      const keyboardH = window.innerHeight - vv!.height;
+      document.documentElement.style.setProperty(
+        '--keyboard-h',
+        `${Math.max(0, keyboardH)}px`,
+      );
+    }
+
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+    return () => {
+      vv.removeEventListener('resize', onResize);
+      vv.removeEventListener('scroll', onResize);
+    };
+  }, []);
 
   function handleNav(path: string) {
     if (navigator.vibrate) navigator.vibrate(8);

@@ -7,6 +7,23 @@ import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
 import FloatingInput from '../../components/FloatingInput';
 
+// ── Password strength helper ──
+function getStrength(pw: string): { level: 0 | 1 | 2 | 3 | 4; label: string; color: string } {
+  if (!pw)           return { level: 0, label: '',         color: 'transparent' };
+  let score = 0;
+  if (pw.length >= 8)          score++;
+  if (pw.length >= 12)         score++;
+  if (/[A-Z]/.test(pw))        score++;
+  if (/[0-9!@#$%^&*]/.test(pw)) score++;
+  const map = [
+    { level: 1 as const, label: 'Weak',   color: '#c4607a' },
+    { level: 2 as const, label: 'Fair',   color: '#d4864a' },
+    { level: 3 as const, label: 'Good',   color: '#e2b96a' },
+    { level: 4 as const, label: 'Strong', color: '#3daa86' },
+  ];
+  return map[Math.min(score, 4) - 1] ?? { level: 1, label: 'Weak', color: '#c4607a' };
+}
+
 export default function Register() {
   const navigate   = useNavigate();
   const { register, isLoading, error, clearError } = useAuthStore();
@@ -128,6 +145,31 @@ export default function Register() {
             required
             autoComplete="new-password"
           />
+          {/* Password strength meter */}
+          {password.length > 0 && (() => {
+            const s = getStrength(password);
+            return (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                style={{ marginTop: -4 }}
+              >
+                <div style={{ display: 'flex', gap: 4, marginBottom: 5 }}>
+                  {[1,2,3,4].map((n) => (
+                    <motion.div
+                      key={n}
+                      animate={{ background: n <= s.level ? s.color : 'var(--surface2)' }}
+                      transition={{ duration: 0.3 }}
+                      style={{ flex: 1, height: 3, borderRadius: 4 }}
+                    />
+                  ))}
+                </div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: s.color, letterSpacing: '0.04em' }}>
+                  {s.label}
+                </p>
+              </motion.div>
+            );
+          })()}
           <FloatingInput
             type="password"
             label="Confirm password"

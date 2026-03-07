@@ -137,6 +137,40 @@ export function applyTheme(key: string) {
   if (metaTheme) metaTheme.setAttribute('content', key === 'white' ? '#f5f3ee' : t.bg);
 }
 
+/** Returns the best initial theme:
+ *  1. User's saved preference   (localStorage)
+ *  2. OS light/dark preference  (prefers-color-scheme)
+ *  3. Fallback: 'dark'
+ */
+function resolveInitialTheme(): string {
+  const saved = localStorage.getItem('lumina_theme');
+  if (saved && THEMES[saved]) return saved;
+  if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'white';
+  return 'dark';
+}
+
+// Listen to OS theme changes and auto-update if the user hasn't set a preference
+if (typeof window !== 'undefined') {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (!localStorage.getItem('lumina_theme')) {
+      const next = e.matches ? 'dark' : 'white';
+      applyTheme(next);
+      useAppStore.setState({ bgTheme: next });
+    }
+  });
+}
+
+// Listen to OS theme changes and auto-update if the user hasn't set a preference
+if (typeof window !== 'undefined') {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (!localStorage.getItem('lumina_theme')) {
+      const next = e.matches ? 'dark' : 'white';
+      applyTheme(next);
+      useAppStore.setState({ bgTheme: next });
+    }
+  });
+}
+
 /* ── Toast ─────────────────────────────────────────────────────────────── */
 export interface ToastMessage {
   id: string;
@@ -197,7 +231,7 @@ export const useAppStore = create<AppState>()((set) => ({
   },
   removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
-  bgTheme: (() => { const t = localStorage.getItem('lumina_theme') ?? 'dark'; applyTheme(t); return t; })(),
+  bgTheme: (() => { const t = resolveInitialTheme(); applyTheme(t); return t; })(),
   setBgTheme: (theme) => {
     localStorage.setItem('lumina_theme', theme);
     applyTheme(theme);

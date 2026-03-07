@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import LoadingSpinner from './components/LoadingSpinner';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Auth pages — small, loaded eagerly so login is instant
 import Login from './pages/auth/Login';
@@ -31,8 +32,9 @@ function PublicRedirect() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Suspense fallback={<LoadingSpinner />}>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           {/* Public onboarding — shown once to first-time visitors */}
           <Route path="/onboarding" element={<Onboarding />} />
@@ -66,5 +68,6 @@ export default function App() {
         </Routes>
       </Suspense>
     </BrowserRouter>
+    </ErrorBoundary>
   );
 }

@@ -8,9 +8,12 @@ weekly life reports, mood pattern analysis, and insight history.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from datetime import datetime, timezone
+from threading import Lock
 
+from cachetools import TTLCache
 from fastapi import APIRouter, Depends, Query, status
 
 from app.config import supabase_admin
@@ -37,6 +40,18 @@ _ai = AIService()
 _memories = MemoryService()
 _wellness = WellnessService()
 _INSIGHT_TABLE = "insights"
+
+# ── Simple AI response cache (TTL = 10 min, max 512 entries) ─────────────────
+# Caches stateless queries (no memories, no conversation history) to avoid
+# redundant Anthropic API calls for repeated mood suggestions, prompts, etc.
+_ai_cache: TTLCache = TTLCache(maxsize=512, ttl=600)
+_cache_lock = Lock()
+
+
+def _cache_key(user_id: str, message: str) -> str:
+    """Deterministic key: sha256 of user_id + normalised message."""
+    raw = f"{user_id}:{message.strip().lower()}"
+    return hashlib.sha256(raw.encode()).hexdigest()[:32]
 
 
 @router.post(
@@ -77,12 +92,32 @@ async def chat(
         for m in payload.conversation_history
     ]
 
+    # Use cache for stateless queries (no memories, no history) — e.g. mood suggestions
+    use_cache = (not payload.include_memories) and (not history)
+    cache_hit = False
+    cached_reply: str | None = None
+
+    if use_cache:
+        key = _cache_key(current_user.user_id, payload.message)
+        with _cache_lock:
+            cached_reply = _ai_cache.get(key)
+
+        if cached_reply:
+            cache_hit = True
+            logger.debug("AI cache hit for user=%s", current_user.user_id)
+            return ChatResponse(reply=cached_reply, memories_used=0, tokens_used=0)
+
     result = await _ai.chat_with_memories(
         user_id=current_user.user_id,
         message=payload.message,
         memory_context=memory_context,
         conversation_history=history,
     )
+
+    if use_cache and not cache_hit:
+        key = _cache_key(current_user.user_id, payload.message)
+        with _cache_lock:
+            _ai_cache[key] = result["reply"]
 
     return ChatResponse(
         reply=result["reply"],
