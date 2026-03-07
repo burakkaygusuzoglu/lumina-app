@@ -30,7 +30,12 @@ export default function Layout() {
 
   function handleNav(path: string) {
     if (navigator.vibrate) navigator.vibrate(8);
-    navigate(path);
+    if ('startViewTransition' in document) {
+      (document as Document & { startViewTransition: (cb: () => void) => void })
+        .startViewTransition(() => navigate(path));
+    } else {
+      navigate(path);
+    }
   }
 
   return (

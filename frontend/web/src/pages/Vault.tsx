@@ -6,6 +6,7 @@ import { useAppStore } from '../store/appStore';
 import type { VaultItem } from '../store/appStore';
 import ConfirmModal from '../components/ConfirmModal';
 import { deriveKey, encryptE2E, decryptE2E } from '../lib/crypto';
+import SkeletonCard from '../components/SkeletonCard';
 
 const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
 
@@ -323,7 +324,7 @@ export default function Vault() {
 
       {isLoading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[1,2,3].map((i) => <div key={i} className="card" style={{ opacity: 0.7 }}><div className="skeleton" style={{ height: 50 }} /></div>)}
+          <SkeletonCard count={3} rows={2} />
         </div>
       ) : filtered.length === 0 ? (
         <div className="empty-state">

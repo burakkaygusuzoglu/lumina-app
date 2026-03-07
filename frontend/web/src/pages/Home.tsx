@@ -113,10 +113,10 @@ export default function Home() {
       {/*  Header  */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <p style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 3 }}>
+          <p className="label-caps" style={{ marginBottom: 3 }}>
             {getGreeting()}
           </p>
-          <h1 style={{ fontSize: 27, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+          <h1 className="heading-lg">
             {firstName} ✦
           </h1>
         </div>
@@ -320,7 +320,10 @@ export default function Home() {
         <p className="section-label" style={{ margin: 0 }}>YOUR MODULES</p>
         <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.06em' }}>6 ACTIVE</span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+      <div
+        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}
+        className="stagger-list"
+      >
         {MODULES.map((mod) => (
           <motion.div
             key={mod.path}
@@ -444,7 +447,7 @@ export default function Home() {
               All 
             </button>
           </div>
-          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', marginBottom: 20 }} className="stagger-list">
             {recentMems.map((mem) => {
               const typeColors: Record<string, string> = { note: '#60a5fa', idea: '#fbbf24', experience: '#34d399', dream: '#a78bfa', goal: '#f87171', gratitude: '#e2b96a' };
               const tColor = typeColors[mem.memory_type ?? ''] ?? 'var(--mind)';

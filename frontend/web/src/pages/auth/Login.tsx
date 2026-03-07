@@ -5,6 +5,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
+import FloatingInput from '../../components/FloatingInput';
 
 export default function Login() {
   const navigate   = useNavigate();
@@ -63,10 +64,10 @@ export default function Login() {
         >
           ✨
         </motion.div>
-        <h1 style={{ fontSize: 30, fontWeight: 800, color: 'var(--text)', marginBottom: 6, fontFamily: 'var(--font-display)', fontStyle: 'italic', letterSpacing: '-0.02em' }}>
+        <h1 className="heading-lg" style={{ marginBottom: 6 }}>
           Lumina Life OS
         </h1>
-        <p style={{ fontSize: 14, color: 'var(--muted)', letterSpacing: '0.01em' }}>
+        <p className="body-sm" style={{ letterSpacing: '0.01em' }}>
           Your AI-powered personal life operating system
         </p>
       </motion.div>
@@ -78,32 +79,30 @@ export default function Login() {
         transition={{ duration: 0.5, delay: 0.12 }}
         style={{
           width: '100%',
-          background: 'linear-gradient(158deg, rgba(22,22,34,0.97) 0%, rgba(16,16,26,0.97) 100%)',
           borderRadius: 'var(--r-xl)',
           padding: '24px 20px 20px',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'linear-gradient(158deg, rgba(22,22,34,0.97) 0%, rgba(16,16,26,0.97) 100%)',
+          border: '1px solid var(--border)',
           boxShadow: '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 8px 40px rgba(0,0,0,0.5)',
         }}
       >
-        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Welcome back</h2>
-        <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 24 }}>Sign in to continue</p>
+        <h2 className="heading-md" style={{ marginBottom: 4 }}>Welcome back</h2>
+        <p className="body-sm" style={{ marginBottom: 24 }}>Sign in to continue</p>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <input
-            className="field"
+          <FloatingInput
             type="email"
-            placeholder="Email address"
+            label="Email address"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={setEmail}
             required
             autoComplete="email"
           />
-          <input
-            className="field"
+          <FloatingInput
             type="password"
-            placeholder="Password"
+            label="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={setPassword}
             required
             autoComplete="current-password"
           />

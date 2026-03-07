@@ -7,6 +7,7 @@ import { api } from '../lib/api';
 import { useAppStore } from '../store/appStore';
 import type { MoodEntry, SleepEntry } from '../store/appStore';
 import ConfirmModal from '../components/ConfirmModal';
+import SkeletonCard from '../components/SkeletonCard';
 
 const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
 const MOODS = ['','','','','','','','','',''];
@@ -184,7 +185,11 @@ export default function Wellness() {
             {/* 7-day bar chart */}
             <div className="card" style={{ marginBottom: 16 }}>
               <p className="section-label">📊 7-DAY MOOD TREND</p>
-              {moodsLoading ? <div className="skeleton" style={{ height: 80 }} /> : (
+              {moodsLoading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                  <SkeletonCard variant="stat" count={2} />
+                </div>
+              ) : (
                 <ResponsiveContainer width="100%" height={80} style={{ marginTop: 4 }}>
                   <BarChart data={chartData} barSize={22}>
                     <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />

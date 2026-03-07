@@ -5,6 +5,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
+import FloatingInput from '../../components/FloatingInput';
 
 export default function Register() {
   const navigate   = useNavigate();
@@ -78,10 +79,10 @@ export default function Register() {
         >
           🌱
         </motion.div>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', marginBottom: 6, fontFamily: 'var(--font-display)', fontStyle: 'italic', letterSpacing: '-0.02em' }}>
+        <h1 className="heading-lg" style={{ marginBottom: 6 }}>
           Begin your journey
         </h1>
-        <p style={{ fontSize: 14, color: 'var(--muted)', letterSpacing: '0.01em' }}>
+        <p className="body-sm" style={{ letterSpacing: '0.01em' }}>
           One account. Five powerful life modules.
         </p>
       </motion.div>
@@ -93,49 +94,45 @@ export default function Register() {
         transition={{ duration: 0.5, delay: 0.12 }}
         style={{
           width: '100%',
-          background: 'linear-gradient(158deg, rgba(22,22,34,0.97) 0%, rgba(16,16,26,0.97) 100%)',
           borderRadius: 'var(--r-xl)',
           padding: '24px 20px 20px',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'linear-gradient(158deg, rgba(22,22,34,0.97) 0%, rgba(16,16,26,0.97) 100%)',
+          border: '1px solid var(--border)',
           boxShadow: '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 8px 40px rgba(0,0,0,0.5)',
         }}
       >
-        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>Create your account</h2>
+        <h2 className="heading-md" style={{ marginBottom: 20 }}>Create your account</h2>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <input
-            className="field"
+          <FloatingInput
             type="text"
-            placeholder="Full name"
+            label="Full name"
             value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            onChange={setFullName}
             required
             autoComplete="name"
           />
-          <input
-            className="field"
+          <FloatingInput
             type="email"
-            placeholder="Email address"
+            label="Email address"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={setEmail}
             required
             autoComplete="email"
           />
-          <input
-            className="field"
+          <FloatingInput
             type="password"
-            placeholder="Password (min. 6 characters)"
+            label="Password (min. 6 characters)"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={setPassword}
             required
             autoComplete="new-password"
           />
-          <input
-            className="field"
+          <FloatingInput
             type="password"
-            placeholder="Confirm password"
+            label="Confirm password"
             value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
+            onChange={setConfirm}
             required
             autoComplete="new-password"
           />
