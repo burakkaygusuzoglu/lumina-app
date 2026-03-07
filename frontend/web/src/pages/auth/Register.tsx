@@ -44,7 +44,10 @@ export default function Register() {
     <div
       style={{
         minHeight: '100dvh',
-        background: 'var(--bg)',
+        background:
+          'radial-gradient(ellipse 80% 60% at 50% -5%, rgba(61,170,134,0.14) 0%, transparent 55%), ' +
+          'radial-gradient(ellipse 60% 50% at 20% 110%, rgba(123,111,218,0.12) 0%, transparent 55%), ' +
+          'var(--bg)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -58,14 +61,27 @@ export default function Register() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1,  y: 0   }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.55 }}
         style={{ textAlign: 'center', marginBottom: 32 }}
       >
-        <span style={{ fontSize: 56 }}>🌱</span>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', marginTop: 10, marginBottom: 6 }}>
+        <motion.div
+          animate={{ scale: [1, 1.08, 1] }}
+          transition={{ repeat: Infinity, duration: 3.5, ease: 'easeInOut' }}
+          style={{
+            width: 70, height: 70,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #3daa86 0%, #7b6fda 70%, #c4607a 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 30, margin: '0 auto 14px',
+            boxShadow: '0 0 36px rgba(61,170,134,0.4), 0 0 70px rgba(123,111,218,0.2)',
+          }}
+        >
+          🌱
+        </motion.div>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', marginBottom: 6, fontFamily: 'var(--font-display)', fontStyle: 'italic', letterSpacing: '-0.02em' }}>
           Begin your journey
         </h1>
-        <p style={{ fontSize: 14, color: 'var(--muted)' }}>
+        <p style={{ fontSize: 14, color: 'var(--muted)', letterSpacing: '0.01em' }}>
           One account. Five powerful life modules.
         </p>
       </motion.div>
@@ -74,9 +90,15 @@ export default function Register() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1,  y: 0  }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="card"
-        style={{ width: '100%' }}
+        transition={{ duration: 0.5, delay: 0.12 }}
+        style={{
+          width: '100%',
+          background: 'linear-gradient(158deg, rgba(22,22,34,0.97) 0%, rgba(16,16,26,0.97) 100%)',
+          borderRadius: 'var(--r-xl)',
+          padding: '24px 20px 20px',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 8px 40px rgba(0,0,0,0.5)',
+        }}
       >
         <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>Create your account</h2>
 

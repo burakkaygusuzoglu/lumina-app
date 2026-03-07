@@ -28,7 +28,10 @@ export default function Login() {
     <div
       style={{
         minHeight: '100dvh',
-        background: 'var(--bg)',
+        background:
+          'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(123,111,218,0.18) 0%, transparent 60%), ' +
+          'radial-gradient(ellipse 60% 50% at 80% 100%, rgba(61,170,134,0.12) 0%, transparent 55%), ' +
+          'var(--bg)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -42,20 +45,28 @@ export default function Login() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1,  y: 0   }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.55 }}
         style={{ textAlign: 'center', marginBottom: 40 }}
       >
+        {/* Gradient orb logo */}
         <motion.div
-          animate={{ rotate: [0, 10, -10, 0] }}
-          transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
-          style={{ fontSize: 64, marginBottom: 12 }}
+          animate={{ scale: [1, 1.06, 1], rotate: [0, 4, -4, 0] }}
+          transition={{ repeat: Infinity, duration: 4.5, ease: 'easeInOut' }}
+          style={{
+            width: 76, height: 76,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #7b6fda 0%, #b76088 50%, #3daa86 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 34, margin: '0 auto 16px',
+            boxShadow: '0 0 40px rgba(123,111,218,0.45), 0 0 80px rgba(61,170,134,0.2)',
+          }}
         >
           ✨
         </motion.div>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', marginBottom: 6, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>
+        <h1 style={{ fontSize: 30, fontWeight: 800, color: 'var(--text)', marginBottom: 6, fontFamily: 'var(--font-display)', fontStyle: 'italic', letterSpacing: '-0.02em' }}>
           Lumina Life OS
         </h1>
-        <p style={{ fontSize: 15, color: 'var(--muted)' }}>
+        <p style={{ fontSize: 14, color: 'var(--muted)', letterSpacing: '0.01em' }}>
           Your AI-powered personal life operating system
         </p>
       </motion.div>
@@ -64,9 +75,15 @@ export default function Login() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1,  y: 0  }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="card"
-        style={{ width: '100%' }}
+        transition={{ duration: 0.5, delay: 0.12 }}
+        style={{
+          width: '100%',
+          background: 'linear-gradient(158deg, rgba(22,22,34,0.97) 0%, rgba(16,16,26,0.97) 100%)',
+          borderRadius: 'var(--r-xl)',
+          padding: '24px 20px 20px',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 8px 40px rgba(0,0,0,0.5)',
+        }}
       >
         <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Welcome back</h2>
         <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 24 }}>Sign in to continue</p>

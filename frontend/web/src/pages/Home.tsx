@@ -271,7 +271,10 @@ export default function Home() {
       </div>
 
       {/*  Module cards 2grid  */}
-      <p className="section-label">YOUR MODULES</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <p className="section-label" style={{ margin: 0 }}>YOUR MODULES</p>
+        <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.04em' }}>6 ACTIVE</span>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
         {MODULES.map((mod) => (
           <motion.div
@@ -311,7 +314,7 @@ export default function Home() {
       {todayTasks.length > 0 && (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <p className="section-label" style={{ margin: 0 }}>TODAY'S TASKS</p>
+            <p className="section-label" style={{ margin: 0 }}>⚡ TODAY'S TASKS</p>
             <button onClick={() => navigate('/life')} style={{ fontSize: 12, color: 'var(--life)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>
               All 
             </button>
@@ -353,7 +356,7 @@ export default function Home() {
       {last7Moods.length > 0 && (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <p className="section-label" style={{ margin: 0 }}>7-DAY MOOD</p>
+            <p className="section-label" style={{ margin: 0 }}>📊 7-DAY MOOD</p>
             <button onClick={() => navigate('/wellness')} style={{ fontSize: 12, color: 'var(--wellness)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>
               Full view 
             </button>
@@ -391,7 +394,7 @@ export default function Home() {
       {recentMems.length > 0 && (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <p className="section-label" style={{ margin: 0 }}>RECENT MEMORIES</p>
+            <p className="section-label" style={{ margin: 0 }}>✦ RECENT MEMORIES</p>
             <button onClick={() => navigate('/mind')} style={{ fontSize: 12, color: 'var(--mind)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>
               All 
             </button>
@@ -407,15 +410,22 @@ export default function Home() {
                   onClick={() => navigate('/mind')}
                   style={{
                     flexShrink: 0, width: 155, padding: '14px', borderRadius: 16,
-                    background: 'var(--surface)', border: `1px solid var(--border)`,
+                    background: 'linear-gradient(158deg, rgba(22,22,34,0.97) 0%, rgba(16,16,26,0.97) 100%)',
+                    border: `1px solid rgba(255,255,255,0.07)`,
                     borderTop: `2px solid ${tColor}`,
                     cursor: 'pointer',
+                    boxShadow: `0 4px 16px rgba(0,0,0,0.3), 0 0 0 0 ${tColor}`,
                   }}
                 >
-                  <p style={{ fontSize: 10, fontWeight: 700, color: tColor, marginBottom: 6, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                    {mem.memory_type ?? 'memory'}
-                  </p>
-                  <p style={{ fontSize: 11, color: 'var(--text2)', lineHeight: 1.45, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
+                    <div style={{ width: 20, height: 20, borderRadius: 6, background: `${tColor}18`, border: `1px solid ${tColor}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>
+                      {mem.memory_type === 'idea' ? '⚡' : mem.memory_type === 'dream' ? '🌙' : mem.memory_type === 'goal' ? '🎯' : mem.memory_type === 'experience' ? '⭐' : mem.memory_type === 'gratitude' ? '❤️' : '◻'}
+                    </div>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: tColor, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      {mem.memory_type ?? 'memory'}
+                    </p>
+                  </div>
+                  <p style={{ fontSize: 11, color: 'var(--text2)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {mem.content}
                   </p>
                 </motion.div>

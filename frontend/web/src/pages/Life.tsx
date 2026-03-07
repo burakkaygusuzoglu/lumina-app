@@ -147,7 +147,7 @@ export default function Life() {
         {Object.entries(PRIORITY_MAP).map(([key, val]) => {
           const count = tasks.filter((t) => t.priority === key && t.status !== 'done' && t.status !== 'cancelled').length;
           return (
-            <div key={key} className="card" style={{ flex: 1, padding: '10px 6px', textAlign: 'center', borderTop: `2px solid ${val.color}` }}>
+            <div key={key} className="stat-card" style={{ flex: 1, borderTop: `2px solid ${val.color}` }}>
               <p style={{ fontSize: 20, fontWeight: 800, color: val.color }}>{count}</p>
               <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600 }}>{val.label}</p>
             </div>
@@ -158,10 +158,10 @@ export default function Life() {
       {/* AI Focus Tip */}
       <div className="card glass" style={{ marginBottom: 16, background: 'rgba(74,143,212,0.05)', borderColor: 'rgba(74,143,212,0.2)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: aiTip ? 10 : 0 }}>
-          <p className="section-label">? AI FOCUS TIP</p>
+          <p className="section-label">✨ AI FOCUS TIP</p>
           <button onClick={() => { triggerHaptic('medium'); getAiFocusTip(); }} disabled={loadingTip}
             style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(74,143,212,0.15)', border: '1px solid rgba(74,143,212,0.3)', color: 'var(--life)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-            {loadingTip ? 'Thinking...' : aiTip ? '?? Refresh' : '? Get Tip'}
+            {loadingTip ? 'Thinking...' : aiTip ? '↻ Refresh' : '↕ Get Tip'}
           </button>
         </div>
         <AnimatePresence>

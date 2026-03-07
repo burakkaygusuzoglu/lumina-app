@@ -20,11 +20,11 @@ function WaterTracker({ consumed, onAdd, onRemove }: WaterTrackerProps) {
     <div className="card" style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div>
-          <p className="section-label"> WATER TRACKER</p>
+          <p className="section-label">💧 WATER TRACKER</p>
           <p style={{ fontSize: 13, color: 'var(--muted)' }}>{consumed}/{WATER_GOAL} glasses today</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn-icon" onClick={onRemove} disabled={consumed === 0} style={{ width: 34, height: 34, fontSize: 18 }}></button>
+          <button className="btn-icon" onClick={onRemove} disabled={consumed === 0} style={{ width: 34, height: 34, fontSize: 18 }}>−</button>
           <button onClick={onAdd} disabled={consumed >= WATER_GOAL}
             style={{ padding: '8px 16px', borderRadius: 'var(--r-md)', background: 'rgba(61,170,134,0.15)', border: '1px solid rgba(61,170,134,0.3)', color: 'var(--wellness)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
             + Add Glass
@@ -34,8 +34,8 @@ function WaterTracker({ consumed, onAdd, onRemove }: WaterTrackerProps) {
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {Array.from({ length: WATER_GOAL }).map((_, i) => (
           <motion.div key={i} initial={{ scale: 0.7 }} animate={{ scale: 1 }} transition={{ delay: i * 0.04 }}
-            style={{ width: 36, height: 44, borderRadius: 8, background: i < consumed ? 'linear-gradient(180deg, #5dd7b5, var(--wellness))' : 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, transition: 'background 0.3s' }}>
-            
+            style={{ width: 36, height: 44, borderRadius: 8, background: i < consumed ? 'linear-gradient(180deg, #5dd7b5, var(--wellness))' : 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: i < consumed ? 20 : 16, transition: 'background 0.3s', border: i < consumed ? 'none' : '1.5px dashed rgba(255,255,255,0.08)' }}>
+            {i < consumed ? '💧' : <span style={{ opacity: 0.3, color: 'var(--text2)' }}>○</span>}
           </motion.div>
         ))}
       </div>
@@ -152,17 +152,17 @@ export default function Wellness() {
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>Wellness</h1>
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <div className="card" style={{ flex: 1, textAlign: 'center', padding: '12px 8px', borderTop: '2px solid var(--wellness)' }}>
-            <p style={{ fontSize: 24, fontWeight: 800, color: 'var(--wellness)' }}>{avgMood || '—'}</p>
-            <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.05em' }}>AVG MOOD</p>
+          <div className="stat-card" style={{ borderTop: '2px solid var(--wellness)' }}>
+            <p style={{ fontSize: 26, fontWeight: 800, color: 'var(--wellness)' }}>{avgMood || '—'}</p>
+            <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 800, letterSpacing: '0.08em', marginTop: 2 }}>AVG MOOD</p>
           </div>
-          <div className="card" style={{ flex: 1, textAlign: 'center', padding: '12px 8px', borderTop: '2px solid var(--life)' }}>
-            <p style={{ fontSize: 24, fontWeight: 800, color: 'var(--life)' }}>{avgSleep ? `${avgSleep}h` : '—'}</p>
-            <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.05em' }}>AVG SLEEP</p>
+          <div className="stat-card" style={{ borderTop: '2px solid var(--life)' }}>
+            <p style={{ fontSize: 26, fontWeight: 800, color: 'var(--life)' }}>{avgSleep ? `${avgSleep}h` : '—'}</p>
+            <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 800, letterSpacing: '0.08em', marginTop: 2 }}>AVG SLEEP</p>
           </div>
-          <div className="card" style={{ flex: 1, textAlign: 'center', padding: '12px 8px', borderTop: '2px solid #5dd7b5' }}>
-            <p style={{ fontSize: 24, fontWeight: 800, color: '#5dd7b5' }}>{waterConsumed}/{WATER_GOAL}</p>
-            <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.05em' }}>WATER</p>
+          <div className="stat-card" style={{ borderTop: '2px solid #5dd7b5' }}>
+            <p style={{ fontSize: 26, fontWeight: 800, color: '#5dd7b5' }}>{waterConsumed}/{WATER_GOAL}</p>
+            <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 800, letterSpacing: '0.08em', marginTop: 2 }}>WATER</p>
           </div>
         </div>
       </div>
@@ -183,7 +183,7 @@ export default function Wellness() {
           <motion.div key="mood" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             {/* 7-day bar chart */}
             <div className="card" style={{ marginBottom: 16 }}>
-              <p className="section-label">7-DAY MOOD TREND</p>
+              <p className="section-label">📊 7-DAY MOOD TREND</p>
               {moodsLoading ? <div className="skeleton" style={{ height: 80 }} /> : (
                 <ResponsiveContainer width="100%" height={80} style={{ marginTop: 4 }}>
                   <BarChart data={chartData} barSize={22}>
@@ -200,7 +200,7 @@ export default function Wellness() {
 
             {/* Log mood */}
             <div className="card" style={{ marginBottom: 16 }}>
-              <p className="section-label">LOG TODAY'S MOOD</p>
+              <p className="section-label">💚 LOG TODAY'S MOOD</p>
               <div style={{ textAlign: 'center', marginTop: 12, marginBottom: 16 }}>
                 <motion.div key={moodValue} initial={{ scale: 0.6 }} animate={{ scale: 1 }} style={{ fontSize: 52, lineHeight: 1 }}>
                   {MOODS[moodValue - 1] ?? ''}
@@ -226,7 +226,7 @@ export default function Wellness() {
         {tab === 'sleep' && (
           <motion.div key="sleep" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="card" style={{ marginBottom: 16 }}>
-              <p className="section-label">LOG SLEEP</p>
+              <p className="section-label">😴 LOG SLEEP</p>
               <div style={{ display: 'flex', gap: 10, marginTop: 12, marginBottom: 12 }}>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>Hours</p>
@@ -245,7 +245,7 @@ export default function Wellness() {
             </div>
             {sleepLogs.length > 0 && (
               <div className="card">
-                <p className="section-label" style={{ marginBottom: 10 }}>RECENT SLEEP</p>
+                <p className="section-label" style={{ marginBottom: 10 }}>🌙 RECENT SLEEP</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {sleepLogs.slice(0, 5).map((s) => (
                     <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
@@ -271,7 +271,7 @@ export default function Wellness() {
           <motion.div key="appointments" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             {/* Exercise log */}
             <div className="card" style={{ marginBottom: 16 }}>
-              <p className="section-label">LOG EXERCISE</p>
+              <p className="section-label">🏃 LOG EXERCISE</p>
               <select className="field" value={exType} onChange={(e) => setExType(e.target.value)} style={{ marginTop: 12, marginBottom: 10 }}>
                 <option value="">Choose exercise type</option>
                 {['Running','Walking','Cycling','Swimming','Yoga','Weightlifting','HIIT','Sports','Other'].map((t) =>
@@ -287,7 +287,7 @@ export default function Wellness() {
               </button>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <p className="section-label">UPCOMING APPOINTMENTS</p>
+              <p className="section-label">📅 UPCOMING APPOINTMENTS</p>
               <button onClick={() => setShowAppt(true)}
                 style={{ padding: '8px 14px', borderRadius: 'var(--r-md)', background: 'rgba(61,170,134,0.12)', border: '1px solid rgba(61,170,134,0.25)', color: 'var(--wellness)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
                 + Add
@@ -295,20 +295,20 @@ export default function Wellness() {
             </div>
             {appointments.length === 0 ? (
               <div className="empty-state" style={{ padding: '30px 0' }}>
-                <div className="emoji"></div>
+                <div className="emoji">📅</div>
                 <p>No appointments scheduled</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {appointments.map((a) => (
                   <div key={a.id} className="card card-hover" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontSize: 28 }}></span>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(61,170,134,0.12)', border: '1px solid rgba(61,170,134,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>🏥</div>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontWeight: 700, fontSize: 14 }}>{a.title}</p>
                       {a.doctor && <p style={{ fontSize: 12, color: 'var(--muted)' }}>Dr. {a.doctor}</p>}
                       <p style={{ fontSize: 12, color: 'var(--wellness)' }}>{a.date} at {a.time}</p>
                     </div>
-                    <button className="btn-icon" onClick={() => setDeleteApptId(a.id)} style={{ color: 'var(--journal)' }}></button>
+                    <button className="btn-icon" onClick={() => setDeleteApptId(a.id)} style={{ color: 'var(--journal)', flexShrink: 0 }}>✕</button>
                   </div>
                 ))}
               </div>

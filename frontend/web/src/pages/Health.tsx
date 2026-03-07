@@ -9,7 +9,7 @@ import type { NutritionEntry } from '../store/appStore';
 const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
-const MEAL_ICONS: Record<string, string> = { breakfast: '', lunch: '', dinner: '', snack: '' };
+const MEAL_ICONS: Record<string, string> = { breakfast: '🌅', lunch: '🥗', dinner: '🍽️', snack: '🍊' };
 const MEAL_COLORS: Record<string, string> = { breakfast: '#e2b96a', lunch: '#3daa86', dinner: '#7b6fda', snack: '#d4864a' };
 
 const CALORIE_GOAL = 2000;
@@ -228,7 +228,7 @@ export default function Health() {
 
       {/* AI Diet Assistant */}
       <div className="card" style={{ marginTop: 8 }}>
-        <p className="section-label" style={{ marginBottom: 12 }}> AI DIET ASSISTANT</p>
+        <p className="section-label" style={{ marginBottom: 12 }}>✦ AI DIET ASSISTANT</p>
         {aiChatHistory.length === 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
             {['Am I eating enough protein?', 'Suggest a healthy dinner', 'How well am I doing today?'].map((s) => (
@@ -264,8 +264,8 @@ export default function Health() {
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendDietMessage()}
             style={{ flex: 1 }} />
           <button onClick={sendDietMessage} disabled={!aiChatMsg.trim() || aiLoading}
-            style={{ width: 40, height: 40, borderRadius: 'var(--r-sm)', background: 'var(--wellness)', border: 'none', color: '#fff', fontSize: 16, cursor: 'pointer', flexShrink: 0, opacity: aiChatMsg.trim() ? 1 : 0.5 }}>
-            
+            style={{ width: 40, height: 40, borderRadius: 'var(--r-sm)', background: 'linear-gradient(135deg, var(--wellness), #5dd7b5)', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer', flexShrink: 0, opacity: aiChatMsg.trim() ? 1 : 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            ↑
           </button>
         </div>
       </div>
@@ -280,7 +280,7 @@ export default function Health() {
               <div className="modal-handle" />
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
                 <h3 style={{ fontSize: 18, fontWeight: 700 }}>Log Food</h3>
-                <button className="btn-icon" onClick={() => { setShowAddForm(false); setAnalysisResult(null); setImagePreview(''); }}></button>
+                <button className="btn-icon" onClick={() => { setShowAddForm(false); setAnalysisResult(null); setImagePreview(''); }}>✕</button>
               </div>
 
               {/* Meal type */}
@@ -295,7 +295,7 @@ export default function Health() {
 
               {/* AI Photo Analysis */}
               <div style={{ marginBottom: 16 }}>
-                <p className="section-label" style={{ marginBottom: 10 }}> AI FOOD RECOGNITION</p>
+                <p className="section-label" style={{ marginBottom: 10 }}>📷 AI FOOD RECOGNITION</p>
                 <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFileChange} />
                 <button
                   onClick={() => fileRef.current?.click()}

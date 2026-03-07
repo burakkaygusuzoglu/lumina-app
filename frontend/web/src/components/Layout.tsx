@@ -56,7 +56,7 @@ export default function Layout() {
                 flexDirection:  'column',
                 alignItems:     'center',
                 gap:            3,
-                padding:        '8px 2px',
+                padding:        '8px 2px 10px',
                 background:     'none',
                 border:         'none',
                 cursor:         'pointer',
@@ -68,22 +68,22 @@ export default function Layout() {
                   layoutId="nav-active"
                   style={{
                     position:     'absolute',
-                    top:          0,
-                    width:        32,
+                    bottom:       6,
+                    width:        20,
                     height:       3,
-                    borderRadius: '0 0 3px 3px',
+                    borderRadius: '3px 3px 0 0',
                     background:   'var(--gradient)',
+                    boxShadow:    '0 0 8px rgba(123,111,218,0.6)',
                   }}
                 />
               )}
               <motion.span
-                animate={{ scale: active ? 1.15 : 1 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                animate={{ scale: active ? 1.18 : 1, y: active ? -1 : 0 }}
+                transition={{ type: 'spring', stiffness: 420, damping: 22 }}
                 style={{
-                  fontSize:   active ? 20 : 18,
-                  opacity:    active ? 1 : 0.45,
+                  fontSize:   active ? 21 : 19,
+                  opacity:    active ? 1 : 0.42,
                   lineHeight: 1,
-                  filter:     active ? 'none' : 'none',
                   background: active ? 'var(--gradient)' : 'none',
                   WebkitBackgroundClip: active ? 'text' : 'unset',
                   WebkitTextFillColor: active ? 'transparent' : 'var(--muted)',
@@ -95,10 +95,11 @@ export default function Layout() {
               <span
                 style={{
                   fontSize:   9,
-                  fontWeight: 700,
-                  letterSpacing: '0.04em',
+                  fontWeight: 800,
+                  letterSpacing: '0.05em',
                   color:      active ? 'var(--mind)' : 'var(--muted)',
                   transition: 'color 0.2s',
+                  opacity:    active ? 1 : 0.65,
                 }}
               >
                 {tab.label.toUpperCase()}
