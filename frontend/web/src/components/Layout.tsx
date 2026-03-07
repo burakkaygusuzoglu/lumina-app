@@ -101,13 +101,33 @@ export default function Layout() {
                   style={{
                     position:     'absolute',
                     top:          7,
-                    width:        42,
-                    height:       32,
-                    borderRadius: 11,
-                    background:   `${tab.color}22`,
-                    border:       `1px solid ${tab.color}35`,
+                    width:        44,
+                    height:       33,
+                    borderRadius: 12,
+                    background:   `${tab.color}1e`,
+                    border:       `1px solid ${tab.color}40`,
+                    boxShadow:    `0 0 12px ${tab.color}30`,
                   }}
-                  transition={{ type: 'spring', stiffness: 460, damping: 28 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                />
+              )}
+
+              {/* Top aurora bar for active tab */}
+              {active && (
+                <motion.div
+                  layoutId="nav-aurora-bar"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    width: 28,
+                    height: 2,
+                    borderRadius: 2,
+                    background: `linear-gradient(90deg, transparent, ${tab.color}, transparent)`,
+                    boxShadow: `0 0 8px ${tab.color}80`,
+                  }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 />
               )}
 

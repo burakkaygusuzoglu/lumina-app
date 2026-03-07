@@ -1,9 +1,10 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
+import SplashScreen from './components/SplashScreen';
 
 // Auth pages — small, loaded eagerly so login is instant
 import Login from './pages/auth/Login';
@@ -31,8 +32,12 @@ function PublicRedirect() {
 }
 
 export default function App() {
+  const [splashDone, setSplashDone] = useState(false);
+  const handleSplashDone = useCallback(() => setSplashDone(true), []);
+
   return (
     <ErrorBoundary>
+      <SplashScreen visible={!splashDone} onDone={handleSplashDone} />
       <BrowserRouter>
         <Suspense fallback={<LoadingSpinner />}>
         <Routes>

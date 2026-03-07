@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#7b6fda"/>
+      <stop offset="50%"  stop-color="#b76088"/>
+      <stop offset="100%" stop-color="#3daa86"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="rgba(255,255,255,0.18)"/>
+      <stop offset="60%"  stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+    <clipPath id="rrect">
+      <rect width="512" height="512" rx="116" ry="116"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background gradient, iOS rounded square -->
+  <rect width="512" height="512" rx="116" ry="116" fill="url(#bg)"/>
+
+  <!-- Subtle top shine -->
+  <rect width="512" height="512" rx="116" ry="116" fill="url(#shine)"/>
+
+  <!-- ✦ star symbol, centered -->
+  <text
+    x="256"
+    y="330"
+    text-anchor="middle"
+    font-size="260"
+    font-family="'Segoe UI', system-ui, sans-serif"
+    fill="rgba(255,255,255,0.95)"
+    font-weight="400"
+  >✦</text>
+</svg>

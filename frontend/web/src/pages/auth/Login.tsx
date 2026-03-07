@@ -1,5 +1,6 @@
 /**
- * Login page — beautiful, airy auth screen.
+ * Login page — Apple-quality auth screen with aurora background,
+ * premium form card, and social sign-in stubs.
  */
 import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -13,6 +14,7 @@ export default function Login() {
 
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
+  const [showPw,   setShowPw]   = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -29,67 +31,99 @@ export default function Login() {
     <div
       style={{
         minHeight: '100dvh',
-        background:
-          'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(123,111,218,0.18) 0%, transparent 60%), ' +
-          'radial-gradient(ellipse 60% 50% at 80% 100%, rgba(61,170,134,0.12) 0%, transparent 55%), ' +
-          'var(--bg)',
+        position: 'relative',
+        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '24px 24px 48px',
+        padding: '24px 24px 60px',
         maxWidth: 430,
         margin: '0 auto',
+        background: 'var(--bg)',
       }}
     >
-      {/* Logo / hero */}
+      {/* Aurora background orbs */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+        <div className="orb orb-mind"     style={{ top: '-8%',  left: '-12%',  width: '55%', height: '55%' }} />
+        <div className="orb orb-wellness" style={{ bottom: '-6%', right: '-10%', width: '50%', height: '50%' }} />
+        <div className="orb orb-journal"  style={{ top: '45%',  right: '-8%',  width: '38%', height: '38%', opacity: 0.35 }} />
+      </div>
+
+      {/* ── Logo / hero ── */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1,  y: 0   }}
-        transition={{ duration: 0.55 }}
-        style={{ textAlign: 'center', marginBottom: 40 }}
+        initial={{ opacity: 0, y: -24, scale: 0.9 }}
+        animate={{ opacity: 1,  y: 0,   scale: 1   }}
+        transition={{ duration: 0.62, ease: [0.34, 1.56, 0.64, 1] }}
+        style={{ textAlign: 'center', marginBottom: 36, position: 'relative', zIndex: 1 }}
       >
-        {/* Gradient orb logo */}
+        {/* App icon — iOS-style rounded square */}
         <motion.div
-          animate={{ scale: [1, 1.06, 1], rotate: [0, 4, -4, 0] }}
-          transition={{ repeat: Infinity, duration: 4.5, ease: 'easeInOut' }}
+          animate={{ rotate: [0, 5, -5, 0] }}
+          transition={{ repeat: Infinity, duration: 5, ease: 'easeInOut' }}
           style={{
-            width: 76, height: 76,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #7b6fda 0%, #b76088 50%, #3daa86 100%)',
+            width: 84, height: 84,
+            borderRadius: 26,
+            background: 'linear-gradient(145deg, #7b6fda 0%, #b76088 55%, #3daa86 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 34, margin: '0 auto 16px',
-            boxShadow: '0 0 40px rgba(123,111,218,0.45), 0 0 80px rgba(61,170,134,0.2)',
+            fontSize: 40, margin: '0 auto 18px',
+            boxShadow:
+              '0 0 0 1px rgba(255,255,255,0.14), ' +
+              '0 0 55px rgba(123,111,218,0.55), ' +
+              '0 0 110px rgba(61,170,134,0.22), ' +
+              '0 24px 50px rgba(0,0,0,0.5)',
           }}
         >
-          ✨
+          ✦
         </motion.div>
-        <h1 className="heading-lg" style={{ marginBottom: 6 }}>
-          Lumina Life OS
+
+        <h1
+          style={{
+            fontSize: 30, fontWeight: 800,
+            letterSpacing: '-0.025em',
+            fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+            marginBottom: 7, color: '#f0f0ff',
+          }}
+        >
+          <span className="grad-text-animated">Lumina</span>
         </h1>
-        <p className="body-sm" style={{ letterSpacing: '0.01em' }}>
-          Your AI-powered personal life operating system
+        <p style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 400, letterSpacing: '0.01em' }}>
+          Your AI-powered life operating system
         </p>
       </motion.div>
 
-      {/* Card */}
+      {/* ── Sign-in card ── */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1,  y: 0  }}
-        transition={{ duration: 0.5, delay: 0.12 }}
+        transition={{ duration: 0.52, delay: 0.14, ease: 'easeOut' }}
         style={{
           width: '100%',
-          borderRadius: 'var(--r-xl)',
-          padding: '24px 20px 20px',
+          borderRadius: 28,
+          padding: '26px 22px 22px',
           background: 'linear-gradient(158deg, rgba(22,22,34,0.97) 0%, rgba(16,16,26,0.97) 100%)',
-          border: '1px solid var(--border)',
-          boxShadow: '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 8px 40px rgba(0,0,0,0.5)',
+          border: '1px solid rgba(255,255,255,0.09)',
+          boxShadow:
+            '0 1px 0 0 rgba(255,255,255,0.05) inset, ' +
+            '0 12px 50px rgba(0,0,0,0.55)',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
-        <h2 className="heading-md" style={{ marginBottom: 4 }}>Welcome back</h2>
-        <p className="body-sm" style={{ marginBottom: 24 }}>Sign in to continue</p>
+        {/* Top-shine stripe */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+          background: 'linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.09) 50%, transparent 95%)',
+          borderRadius: '28px 28px 0 0',
+          pointerEvents: 'none',
+        }} />
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4, color: 'var(--text)' }}>
+          Welcome back
+        </h2>
+        <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 22 }}>Sign in to continue</p>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
           <FloatingInput
             type="email"
             label="Email address"
@@ -98,57 +132,157 @@ export default function Login() {
             required
             autoComplete="email"
           />
-          <FloatingInput
-            type="password"
-            label="Password"
-            value={password}
-            onChange={setPassword}
-            required
-            autoComplete="current-password"
-          />
 
-          {/* Error message */}
+          {/* Password with show/hide */}
+          <div style={{ position: 'relative' }}>
+            <FloatingInput
+              type={showPw ? 'text' : 'password'}
+              label="Password"
+              value={password}
+              onChange={setPassword}
+              required
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw((p) => !p)}
+              style={{
+                position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: 11, color: 'var(--muted)', fontWeight: 700,
+                letterSpacing: '0.06em', padding: '4px 2px',
+              }}
+            >
+              {showPw ? 'HIDE' : 'SHOW'}
+            </button>
+          </div>
+
+          {/* Forgot password */}
+          <div style={{ textAlign: 'right', marginTop: -5 }}>
+            <span style={{ fontSize: 12, color: 'var(--mind)', fontWeight: 600, cursor: 'pointer' }}>
+              Forgot password?
+            </span>
+          </div>
+
+          {/* Error */}
           {error && (
             <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
               style={{
-                background: 'rgba(196,96,122,0.12)',
-                border: '1px solid rgba(196,96,122,0.35)',
-                borderRadius: 'var(--r-sm)',
-                padding: '10px 14px',
-                fontSize: 13,
-                color: 'var(--journal)',
-                fontWeight: 500,
+                background: 'rgba(196,96,122,0.11)',
+                border: '1px solid rgba(196,96,122,0.32)',
+                borderRadius: 10, padding: '10px 14px',
+                fontSize: 13, color: 'var(--journal)', fontWeight: 500,
               }}
             >
               {error}
             </motion.p>
           )}
 
-          <button
+          {/* Primary CTA */}
+          <motion.button
             type="submit"
-            className="btn-primary"
             disabled={isLoading}
-            style={{ marginTop: 4 }}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              width: '100%', padding: '16px', marginTop: 4,
+              borderRadius: 14, fontSize: 16, fontWeight: 700,
+              fontFamily: 'var(--font)',
+              background: isLoading
+                ? 'rgba(123,111,218,0.3)'
+                : 'linear-gradient(135deg, #7b6fda 0%, #3daa86 100%)',
+              color: '#fff', border: 'none',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              letterSpacing: '0.02em',
+              boxShadow: isLoading ? 'none' : '0 6px 26px rgba(123,111,218,0.42), 0 1px 0 rgba(255,255,255,0.15) inset',
+              position: 'relative', overflow: 'hidden',
+              transition: 'opacity 0.2s, box-shadow 0.2s',
+            }}
           >
-            {isLoading ? 'Signing in…' : 'Sign In'}
-          </button>
+            {!isLoading && (
+              <span style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 55%)',
+                borderRadius: 'inherit', pointerEvents: 'none',
+              }} />
+            )}
+            {isLoading ? (
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <span className="ai-thinking-dots">
+                  <span className="ai-thinking-dot dot-flicker-1" />
+                  <span className="ai-thinking-dot dot-flicker-2" />
+                  <span className="ai-thinking-dot dot-flicker-3" />
+                </span>
+                Signing in
+              </span>
+            ) : 'Sign In'}
+          </motion.button>
         </form>
+
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.08em' }}>OR</span>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        </div>
+
+        {/* Social buttons (soon) */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          {['🍎  Apple', '🇬  Google'].map((s) => (
+            <button
+              key={s}
+              disabled
+              style={{
+                flex: 1, padding: '13px 8px',
+                borderRadius: 12, fontSize: 14, fontWeight: 600,
+                fontFamily: 'var(--font)',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.09)',
+                color: 'var(--muted)', cursor: 'not-allowed',
+              }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        <p style={{ textAlign: 'center', fontSize: 10, color: 'var(--muted)', marginTop: 8, letterSpacing: '0.07em', fontWeight: 700 }}>
+          SOCIAL SIGN-IN — COMING SOON
+        </p>
       </motion.div>
 
-      {/* Register link */}
+      {/* Create account link */}
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        style={{ marginTop: 24, fontSize: 14, color: 'var(--muted)' }}
+        transition={{ delay: 0.35 }}
+        style={{ marginTop: 28, fontSize: 14, color: 'var(--muted)', position: 'relative', zIndex: 1 }}
       >
         New to Lumina?{' '}
         <Link to="/register" style={{ color: 'var(--mind)', fontWeight: 700 }}>
           Create account
         </Link>
       </motion.p>
+
+      {/* Feature strip */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        style={{
+          marginTop: 28, display: 'flex', flexWrap: 'wrap', gap: 12,
+          justifyContent: 'center', position: 'relative', zIndex: 1,
+        }}
+      >
+        {['🧠 AI Memory', '🔒 E2E Encrypted', '📊 Life Dashboard'].map((f) => (
+          <span
+            key={f}
+            style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600, whiteSpace: 'nowrap' }}
+          >
+            {f}
+          </span>
+        ))}
+      </motion.div>
     </div>
   );
 }

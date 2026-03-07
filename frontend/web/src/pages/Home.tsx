@@ -125,7 +125,7 @@ export default function Home() {
             {getGreeting()}
           </p>
           <h1 className="heading-lg">
-            {firstName} ✦
+            <span className="grad-text-animated">{firstName}</span> ✦
           </h1>
         </div>
         <motion.div
@@ -148,8 +148,22 @@ export default function Home() {
       </div>
 
       {/*  AI Card  */}
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 16 }}>
         <AICard insight={aiInsight} />
+      </div>
+
+      {/*  Stat strip — 3 live metrics at a glance  */}
+      <div className="stat-strip" style={{ marginBottom: 20 }}>
+        {[
+          { value: tasks.filter((t) => t.status === 'done').length, label: 'Done', color: 'var(--life)' },
+          { value: memories.length, label: 'Memories', color: 'var(--mind)' },
+          { value: last7Moods.length, label: 'Mood logs', color: 'var(--wellness)' },
+        ].map((s) => (
+          <div key={s.label} className="stat-strip-item press-card tap-ripple">
+            <div className="stat-strip-value" style={{ color: s.color }}>{s.value}</div>
+            <div className="stat-strip-label">{s.label}</div>
+          </div>
+        ))}
       </div>
 
       {/*  Quick-action shortcuts row  */}
@@ -335,34 +349,34 @@ export default function Home() {
         {MODULES.map((mod) => (
           <motion.div
             key={mod.path}
-            className="module-card-img"
+            className="module-card-v2"
             whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
+            whileTap={{ scale: 0.965 }}
             onClick={() => navigate(mod.path)}
-            style={{ boxShadow: `0 4px 20px -8px ${mod.color}60` }}
+            style={{ height: 138, boxShadow: `0 4px 24px -8px ${mod.color}70` }}
           >
             <img src={mod.img} alt={mod.label} loading="lazy" />
-            <div className="overlay" style={{ background: `linear-gradient(to top, ${mod.color}cc 0%, rgba(0,0,0,0.3) 100%)` }}>
-              <p style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{mod.label}</p>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{mod.sub}</p>
+            <div className="overlay-v2">
+              <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>{mod.label}</p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>{mod.sub}</p>
             </div>
-            <div style={{ position: 'absolute', top: 8, right: 8, width: 6, height: 6, borderRadius: '50%', background: mod.color, boxShadow: `0 0 8px ${mod.color}` }} />
+            <div style={{ position: 'absolute', top: 10, right: 10, width: 7, height: 7, borderRadius: '50%', background: mod.color, boxShadow: `0 0 10px ${mod.color}, 0 0 4px ${mod.color}` }} />
           </motion.div>
         ))}
-        {/* Health card spans full width */}
+        {/* Health card */}
         <motion.div
-          className="module-card-img"
-          style={{ gridColumn: 'span 1', boxShadow: '0 4px 20px -8px rgba(61,170,134,0.4)' }}
+          className="module-card-v2"
+          style={{ gridColumn: 'span 1', height: 138, boxShadow: '0 4px 24px -8px rgba(61,170,134,0.5)' }}
           whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
+          whileTap={{ scale: 0.965 }}
           onClick={() => navigate('/health')}
         >
           <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&q=80" alt="Health" loading="lazy" />
-          <div className="overlay" style={{ background: 'linear-gradient(to top, rgba(61,170,134,0.8) 0%, rgba(0,0,0,0.3) 100%)' }}>
-            <p style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>Health</p>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>Nutrition & AI</p>
+          <div className="overlay-v2">
+            <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>Health</p>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>Nutrition & AI</p>
           </div>
-          <div style={{ position: 'absolute', top: 8, right: 8, width: 6, height: 6, borderRadius: '50%', background: 'var(--wellness)', boxShadow: '0 0 8px var(--wellness)' }} />
+          <div style={{ position: 'absolute', top: 10, right: 10, width: 7, height: 7, borderRadius: '50%', background: 'var(--wellness)', boxShadow: '0 0 10px var(--wellness), 0 0 4px var(--wellness)' }} />
         </motion.div>
       </div>
 
