@@ -1,10 +1,9 @@
 ﻿import { useState } from 'react';
 import AICard from '../components/AICard';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/appStore';
 import { THEMES } from '../store/appStore';
-import ConfirmModal from '../components/ConfirmModal';
 
 const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
 
@@ -53,7 +52,6 @@ export default function Settings() {
   const [dailyReminder, setDailyReminder] = useState(() => localStorage.getItem('daily_reminder') !== 'false');
   const [analytics,     setAnalytics]     = useState(() => localStorage.getItem('analytics') !== 'false');
   const [compactView,   setCompactView]   = useState(() => localStorage.getItem('compact') === 'true');
-  const [reportBug,     setReportBug]     = useState(false);
 
   async function requestPushPermission(enable: boolean) {
     if (enable) {
@@ -91,12 +89,14 @@ export default function Settings() {
   }
 
   function handleAboutAction(label: string) {
-    if (label === 'Privacy Policy' || label === 'Terms of Service') {
-      window.open('https://luminalifeos.com', '_blank');
-    } else if (label === 'Report a Bug') {
-      setReportBug(true);
+    if (label === 'Privacy Policy') {
+      navigate('/privacy');
+    } else if (label === 'Terms of Service') {
+      navigate('/tos');
+    } else if (label === 'Help & Support') {
+      navigate('/help');
     } else if (label === 'Rate the App') {
-      window.open('market://details?id=com.lumina.lifeos', '_blank') || 
+      window.open('market://details?id=com.lumina.lifeos', '_blank') ||
       window.open('itms-apps://itunes.apple.com/app/id123456789', '_blank') ||
       addToast('info', 'Redirecting to App Store / Google Play...');
     }
@@ -104,24 +104,31 @@ export default function Settings() {
 
   const SECTIONS = [
     {
-      title: 'NOTIFICATIONS',
+      title: '🔔 NOTIFICATIONS',
       rows: [
         { icon: '🔔', label: 'Push Notifications', description: 'Get reminders and updates', value: notifications, onChange: requestPushPermission },
         { icon: '⏰', label: 'Daily Reminder', description: 'Morning journal prompt at 9 AM', value: dailyReminder, onChange: handleDailyReminder },
       ],
     },
     {
-      title: 'APPEARANCE',
+      title: '🎛️ APPEARANCE',
       rows: [
         { icon: '📐', label: 'Compact View', description: 'Show more content in less space', value: compactView, onChange: (v: boolean) => { setCompactView(v); save('compact', v); } },
       ],
     },
     {
-      title: 'PRIVACY',
+      title: '🔒 PRIVACY',
       rows: [
-        { icon: '📊', label: 'Analytics', description: 'Help improve the app', value: analytics, onChange: (v: boolean) => { setAnalytics(v); save('analytics', v); } },
+        { icon: '📊', label: 'Analytics', description: 'Help improve the app (anonymous)', value: analytics, onChange: (v: boolean) => { setAnalytics(v); save('analytics', v); } },
       ],
     },
+  ];
+
+  const ABOUT_ROWS = [
+    { icon: '🛡️', label: 'Privacy Policy',  description: 'How we protect your data' },
+    { icon: '📄', label: 'Terms of Service', description: 'Usage terms and conditions' },
+    { icon: '💬', label: 'Help & Support',   description: 'FAQ, bug reports & contact us' },
+    { icon: '⭐', label: 'Rate the App',     description: 'Share your feedback on stores' },
   ];
 
   return (
@@ -134,7 +141,7 @@ export default function Settings() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Theme / Background Color */}
+        {/* Theme */}
         <div className="card">
           <p className="section-label" style={{ marginBottom: 14 }}>🎨 BACKGROUND THEME</p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -145,23 +152,17 @@ export default function Settings() {
                   key={key}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => { setBgTheme(key); addToast('success', `Theme: ${theme.label}`); }}
-                  style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
                   <div style={{
                     width: 46, height: 46, borderRadius: 14,
                     background: theme.bg,
                     border: active ? '2.5px solid var(--mind)' : '2px solid var(--border)',
                     boxShadow: active ? '0 0 0 3px rgba(123,111,218,0.25)' : 'none',
-                    transition: 'all 0.2s',
-                    position: 'relative', overflow: 'hidden',
+                    transition: 'all 0.2s', position: 'relative', overflow: 'hidden',
                   }}>
                     <div style={{ position: 'absolute', bottom: 4, right: 4, width: 18, height: 18, borderRadius: 6, background: theme.surface }} />
-                    {active && (
-                      <div style={{ position: 'absolute', top: 3, right: 3, width: 10, height: 10, borderRadius: '50%', background: 'var(--mind)' }} />
-                    )}
+                    {active && <div style={{ position: 'absolute', top: 3, right: 3, width: 10, height: 10, borderRadius: '50%', background: 'var(--mind)' }} />}
                   </div>
                   <span style={{ fontSize: 10, fontWeight: 600, color: active ? 'var(--text)' : 'var(--muted)', letterSpacing: '0.01em' }}>{theme.label}</span>
                 </motion.button>
@@ -169,6 +170,8 @@ export default function Settings() {
             })}
           </div>
         </div>
+
+        {/* Toggle sections */}
         {SECTIONS.map((section) => (
           <div key={section.title} className="card">
             <p className="section-label" style={{ marginBottom: 6 }}>{section.title}</p>
@@ -181,18 +184,30 @@ export default function Settings() {
 
         {/* About */}
         <div className="card">
-          <p className="section-label" style={{ marginBottom: 6 }}>ABOUT</p>
-          {[
-            { icon: '🔒', label: 'Privacy Policy' },
-            { icon: '📄', label: 'Terms of Service' },
-            { icon: '🐛', label: 'Report a Bug' },
-            { icon: '⭐', label: 'Rate the App' },
-          ].map((item) => (
-            <button key={item.label} onClick={() => handleAboutAction(item.label)}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid var(--border)', color: 'var(--text)', textAlign: 'left' }}>
-              <span style={{ fontSize: 18, width: 28, textAlign: 'center' }}>{item.icon}</span>
-              <span style={{ flex: 1, fontSize: 14 }}>{item.label}</span>
-              <span style={{ color: 'var(--muted)' }}>›</span>
+          <p className="section-label" style={{ marginBottom: 6 }}>ℹ️ ABOUT</p>
+          {ABOUT_ROWS.map((item, idx) => (
+            <button
+              key={item.label}
+              onClick={() => handleAboutAction(item.label)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                padding: '13px 0', background: 'none', border: 'none', cursor: 'pointer',
+                borderBottom: idx < ABOUT_ROWS.length - 1 ? '1px solid var(--border)' : 'none',
+                color: 'var(--text)', textAlign: 'left',
+              }}
+            >
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'var(--bg)',
+                border: '1px solid var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 16, flexShrink: 0,
+              }}>{item.icon}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 600 }}>{item.label}</p>
+                {item.description && <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{item.description}</p>}
+              </div>
+              <span style={{ color: 'var(--muted)', fontSize: 18 }}>›</span>
             </button>
           ))}
         </div>
@@ -201,14 +216,6 @@ export default function Settings() {
           Lumina Life OS · v2.0.0
         </p>
       </div>
-
-      <AnimatePresence>
-        {reportBug && (
-           <ConfirmModal title="Report a Bug" message="Your bug report and current application logs will be sent to the Lumina engineering team over a secure channel." confirmText="Send Report"
-           onConfirm={() => { addToast('success', 'Bug report securely submitted. Thank you!'); setReportBug(false); }} onCancel={() => setReportBug(false)} />
-        )}
-      </AnimatePresence>
-
     </motion.div>
   );
 }

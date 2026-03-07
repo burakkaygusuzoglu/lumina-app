@@ -115,19 +115,26 @@ export const THEMES: Record<string, { label: string; bg: string; surface: string
   teal:   { label: 'Turkuaz',    bg: '#031619', surface: '#072028', surface2: '#0c2a35', text: '#e4f5f7', border: 'rgba(61,170,134,0.15)', muted: '#568a90' },
   navy:   { label: 'Koyu Mavi',  bg: '#050e1f', surface: '#0c1830', surface2: '#112040', text: '#e4ecf7', border: 'rgba(74,143,212,0.15)', muted: '#4a6a8a' },
   purple: { label: 'Koyu Mor',   bg: '#0d0818', surface: '#190f2a', surface2: '#221538', text: '#ede8f7', border: 'rgba(123,111,218,0.18)', muted: '#6a5888' },
-  white:  { label: 'Beyaz',      bg: '#f0f0f7', surface: '#ffffff', surface2: '#e8e8f2', text: '#0e0e1a', border: 'rgba(0,0,0,0.08)', muted: '#707088' },
+  white:  { label: 'Beyaz',      bg: '#f5f3ee', surface: '#fffdf6', surface2: '#f0edd8', text: '#1a1a2e', border: 'rgba(0,0,0,0.08)', muted: '#707080' },
 };
 
 export function applyTheme(key: string) {
   const t = THEMES[key] ?? THEMES.dark;
   const root = document.documentElement;
-  root.style.setProperty('--bg', t.bg);
-  root.style.setProperty('--surface', t.surface);
+  // Set data-theme for CSS selector overrides
+  root.setAttribute('data-theme', key);
+  // Set color-scheme so browser chrome uses right colors
+  root.style.colorScheme = key === 'white' ? 'light' : 'dark';
+  root.style.setProperty('--bg',       t.bg);
+  root.style.setProperty('--surface',  t.surface);
   root.style.setProperty('--surface2', t.surface2);
-  root.style.setProperty('--text', t.text);
-  root.style.setProperty('--text2', t.text);
-  root.style.setProperty('--border', t.border);
-  root.style.setProperty('--muted', t.muted);
+  root.style.setProperty('--text',     t.text);
+  root.style.setProperty('--text2',    t.text);
+  root.style.setProperty('--border',   t.border);
+  root.style.setProperty('--muted',    t.muted);
+  // Update theme-color meta tag dynamically
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.setAttribute('content', key === 'white' ? '#f5f3ee' : t.bg);
 }
 
 /* ── Toast ─────────────────────────────────────────────────────────────── */

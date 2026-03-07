@@ -579,5 +579,173 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .star-btn:active { transform: scale(1.3); }
 
+/* ════════════════════════════════════════════════════════════════════════════
+   WHITE / LIGHT THEME OVERRIDES  [data-theme="white"]
+   Overrides all hardcoded dark RGBA values so the UI looks correct in light mode
+   ════════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="white"] body {
+  background: #f5f3ee;
+  color: #1a1a2e;
+  color-scheme: light;
+}
+
+[data-theme="white"] .app-shell {
+  background: #f5f3ee;
+}
+
+/* Cards */
+[data-theme="white"] .card {
+  background: linear-gradient(158deg, #fffdf6 0%, #faf7e8 100%);
+  border-color: rgba(0,0,0,0.07);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 2px 16px rgba(0,0,0,0.07);
+}
+[data-theme="white"] .card-header {
+  border-bottom-color: rgba(0,0,0,0.06);
+}
+
+/* Stat cards */
+[data-theme="white"] .stat-card {
+  background: linear-gradient(158deg, #fffdf6 0%, #faf7e8 100%);
+  border-color: rgba(0,0,0,0.07);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+}
+
+/* Input fields */
+[data-theme="white"] .field {
+  background: rgba(255,253,246,0.9);
+  border-color: rgba(0,0,0,0.12);
+  color: #1a1a2e;
+}
+[data-theme="white"] .field::placeholder {
+  color: #a0a0b8;
+}
+[data-theme="white"] .field:focus {
+  background: #fff;
+  border-color: rgba(123,111,218,0.6);
+  box-shadow: 0 0 0 3px rgba(123,111,218,0.12);
+}
+
+/* Bottom navigation */
+[data-theme="white"] .bottom-nav {
+  background: rgba(245,243,238,0.96);
+  border-top-color: rgba(0,0,0,0.08);
+  box-shadow: 0 -1px 0 rgba(255,255,255,0.9), 0 -12px 40px rgba(0,0,0,0.06);
+}
+
+/* Tab bar */
+[data-theme="white"] .tab-bar {
+  background: rgba(235,231,212,0.8);
+  border-color: rgba(0,0,0,0.06);
+}
+[data-theme="white"] .tab-item {
+  color: #9090a8;
+}
+[data-theme="white"] .tab-item.active {
+  background: linear-gradient(145deg, #fffdf6 0%, #f5f0de 100%);
+  color: #1a1a2e;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.09);
+  border-color: rgba(0,0,0,0.05);
+}
+
+/* Modal / bottom sheet */
+[data-theme="white"] .modal-sheet {
+  background: rgba(245,243,238,0.98);
+  border-top-color: rgba(0,0,0,0.08);
+}
+[data-theme="white"] .sheet-handle {
+  background: rgba(0,0,0,0.15);
+}
+
+/* Glass surfaces */
+[data-theme="white"] .glass {
+  background: rgba(255,253,246,0.65);
+  border-color: rgba(0,0,0,0.06);
+  backdrop-filter: blur(12px) saturate(1.5);
+}
+
+/* Icon buttons */
+[data-theme="white"] .btn-icon {
+  background: rgba(235,231,212,0.8);
+  border-color: rgba(0,0,0,0.08);
+  color: #1a1a2e;
+}
+[data-theme="white"] .btn-icon:hover {
+  background: rgba(225,221,200,0.9);
+}
+
+/* Skeleton loaders */
+[data-theme="white"] .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(210,205,185,0.4) 25%,
+    rgba(235,230,205,0.55) 50%,
+    rgba(210,205,185,0.4) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* Chips / tags */
+[data-theme="white"] .chip {
+  background: rgba(230,226,206,0.9);
+  border-color: rgba(0,0,0,0.08);
+  color: #4a4a6a;
+}
+[data-theme="white"] .chip.active,
+[data-theme="white"] .chip[data-active="true"] {
+  background: rgba(123,111,218,0.15);
+  color: var(--mind);
+  border-color: rgba(123,111,218,0.3);
+}
+
+/* Range inputs */
+[data-theme="white"] input[type="range"] {
+  background: #e0dcc8;
+}
+
+/* Dividers */
+[data-theme="white"] .divider,
+[data-theme="white"] hr {
+  background: rgba(0,0,0,0.08);
+  border-color: rgba(0,0,0,0.08);
+}
+
+/* Section labels / muted text handled via CSS var(--muted) */
+
+/* Page headers */
+[data-theme="white"] .page-header {
+  background: rgba(245,243,238,0.92);
+  border-bottom-color: rgba(0,0,0,0.06);
+}
+
+/* Settings rows */
+[data-theme="white"] .settings-row {
+  background: rgba(255,253,246,0.7);
+  border-color: rgba(0,0,0,0.06);
+}
+[data-theme="white"] .settings-row:hover {
+  background: rgba(255,253,246,0.95);
+}
+[data-theme="white"] .settings-section {
+  background: rgba(255,253,246,0.6);
+  border-color: rgba(0,0,0,0.06);
+}
+
+/* Mood / entry cards */
+[data-theme="white"] .entry-card {
+  background: linear-gradient(158deg, #fffdf6 0%, #faf7e8 100%);
+  border-color: rgba(0,0,0,0.07);
+}
+
+/* Scrollbars */
+[data-theme="white"] ::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.04);
+}
+[data-theme="white"] ::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+}
+[data-theme="white"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.25);
+}
 
 
