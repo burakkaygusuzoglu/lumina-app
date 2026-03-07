@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useRef } from 'react';
+﻿import { useState, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
@@ -211,6 +211,26 @@ export default function Mind() {
     staleTime: 30_000,
   });
 
+  // Semantic (Pinecone) search — only fires when user types ≥2 chars
+  const { data: semanticResults = [], isFetching: semanticLoading } = useQuery<Memory[]>({
+    queryKey: ['memories-search', debouncedSearch],
+    queryFn:  () => api.get(`/memories/search?q=${encodeURIComponent(debouncedSearch)}`).then((r) => r.data),
+    enabled:  debouncedSearch.length >= 2,
+    staleTime: 30_000,
+  });
+
+  function exportMemories() {
+    const exportData = allMemories.map(({ id, title, content, memory_type, tags, created_at }) => ({ id, title, content, memory_type, tags, created_at }));
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `lumina-memories-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast('success', 'Memories exported!');
+  }
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/memories/${id}`),
     onSuccess:  () => { qc.invalidateQueries({ queryKey: ['memories'] }); addToast('success', 'Memory deleted'); setDeleteId(undefined); },
@@ -232,14 +252,13 @@ export default function Mind() {
     }
   }
 
-  const filtered = allMemories.filter((m) => {
-    const matchType = !typeFilter || m.memory_type === typeFilter;
-    const matchSearch = !debouncedSearch ||
-      m.content.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      (m.title ?? '').toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      (m.tags ?? []).some((t) => t.includes(debouncedSearch.toLowerCase()));
-    return matchType && matchSearch;
-  });
+  // Use semantic results when searching, local filter otherwise
+  const filtered = useMemo(() => {
+    if (debouncedSearch.length >= 2) {
+      return semanticResults.filter((m) => !typeFilter || m.memory_type === typeFilter);
+    }
+    return allMemories.filter((m) => !typeFilter || m.memory_type === typeFilter);
+  }, [debouncedSearch, semanticResults, allMemories, typeFilter]);
 
   return (
     <motion.div {...PAGE} className="page">
@@ -252,15 +271,31 @@ export default function Mind() {
           <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>Mind</h1>
           <p style={{ fontSize: 13, color: 'var(--muted)' }}>{allMemories.length} memories stored</p>
         </div>
-        <motion.button whileTap={{ scale: 0.92 }} className="fab" onClick={() => setShowForm(true)}>+</motion.button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={exportMemories} title="Export JSON"
+            style={{ padding: '8px 12px', borderRadius: 10, background: 'rgba(123,111,218,0.12)', border: '1px solid rgba(123,111,218,0.25)', color: 'var(--mind)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+            ↓ Export
+          </button>
+          <motion.button whileTap={{ scale: 0.92 }} className="fab" onClick={() => setShowForm(true)}>+</motion.button>
+        </div>
       </div>
 
       {/* Search */}
-      <input
-        className="field" placeholder="  Search memories" value={search}
-        onChange={(e) => handleSearch(e.target.value)}
-        style={{ marginBottom: 12 }}
-      />
+      <div style={{ position: 'relative', marginBottom: 12 }}>
+        <input
+          className="field" placeholder="  🔍 Search memories (semantic)" value={search}
+          onChange={(e) => handleSearch(e.target.value)}
+          style={{ paddingRight: semanticLoading ? 44 : 12 }}
+        />
+        {semanticLoading && (
+          <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--mind)', fontWeight: 700 }}>AI…</span>
+        )}
+      </div>
+      {debouncedSearch.length >= 2 && !semanticLoading && (
+        <p style={{ fontSize: 11, color: 'var(--mind)', marginBottom: 8, fontWeight: 600 }}>
+          ✦ Semantic search · {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+        </p>
+      )}
 
       {/* Enhanced Apple-style Segmentation */}
         <div style={{

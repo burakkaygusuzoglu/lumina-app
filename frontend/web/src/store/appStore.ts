@@ -160,17 +160,6 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// Listen to OS theme changes and auto-update if the user hasn't set a preference
-if (typeof window !== 'undefined') {
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    if (!localStorage.getItem('lumina_theme')) {
-      const next = e.matches ? 'dark' : 'white';
-      applyTheme(next);
-      useAppStore.setState({ bgTheme: next });
-    }
-  });
-}
-
 /* ── Toast ─────────────────────────────────────────────────────────────── */
 export interface ToastMessage {
   id: string;

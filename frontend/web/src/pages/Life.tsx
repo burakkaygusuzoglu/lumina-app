@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from 'react';
+﻿import { useState, useMemo, useEffect, useRef } from 'react';
 import AICard from '../components/AICard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -45,12 +45,41 @@ export default function Life() {
 
   const qc       = useQueryClient();
   const addToast = useAppStore((s) => s.addToast);
-  const [tab, setTab]           = useState<'today'|'upcoming'|'all'>('today');
+  const [tab, setTab]           = useState<'today'|'upcoming'|'all'|'done'>('today');
   const [showForm, setShowForm] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [aiTip,   setAiTip]    = useState('');
   const [loadingTip, setLoadingTip] = useState(false);
+
+  // Pomodoro
+  const [pomState, setPomState] = useState<'idle'|'work'|'break'>('idle');
+  const [pomSecs,  setPomSecs]  = useState(25 * 60);
+  const pomRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (pomState === 'idle') { if (pomRef.current) clearInterval(pomRef.current); return; }
+    pomRef.current = setInterval(() => {
+      setPomSecs((s) => {
+        if (s <= 1) {
+          if (pomRef.current) clearInterval(pomRef.current);
+          if (pomState === 'work') {
+            addToast('success', '🍅 Pomodoro tamamlandı! Mola zamanı.');
+            triggerHaptic('success');
+            setPomState('break');
+            return 5 * 60;
+          } else {
+            addToast('info', '☕ Mola bitti! Tekrar odaklan.');
+            setPomState('idle');
+            return 25 * 60;
+          }
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => { if (pomRef.current) clearInterval(pomRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pomState]);
 
   // Form state
   const [title,       setTitle]       = useState('');
@@ -117,11 +146,14 @@ export default function Life() {
   }
 
   const today = new Date().toISOString().split('T')[0];
+  const pomMin    = String(Math.floor(pomSecs / 60)).padStart(2, '0');
+  const pomSecStr = String(pomSecs % 60).padStart(2, '0');
 
   const filtered = useMemo(() => {
     return tasks.filter((t) => {
       if (tab === 'today')    return (t.status === 'todo' || t.status === 'in_progress') && (!t.due_date || t.due_date <= today);
       if (tab === 'upcoming') return (t.status === 'todo' || t.status === 'in_progress') && t.due_date && t.due_date > today;
+      if (tab === 'done')     return t.status === 'done';
       return true;
     });
   }, [tasks, tab, today]);
@@ -174,12 +206,40 @@ export default function Life() {
         </AnimatePresence>
       </div>
 
+      {/* Pomodoro Focus Timer */}
+      <div className="card glass" style={{ marginBottom: 16, borderColor: pomState === 'work' ? 'rgba(196,96,122,0.35)' : pomState === 'break' ? 'rgba(61,170,134,0.35)' : 'var(--border)', background: pomState === 'work' ? 'rgba(196,96,122,0.06)' : pomState === 'break' ? 'rgba(61,170,134,0.06)' : 'transparent', transition: 'all 0.4s' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <p className="section-label">🍅 FOCUS TIMER</p>
+            <p style={{ fontSize: 30, fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '0.04em', color: pomState === 'work' ? 'var(--journal)' : pomState === 'break' ? 'var(--wellness)' : 'var(--text)', marginTop: 4 }}>
+              {pomMin}:{pomSecStr}
+            </p>
+            <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+              {pomState === 'idle' ? '25 dak odak · 5 dak mola' : pomState === 'work' ? '🔥 Odak modu' : '☕ Mola zamanı'}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {pomState === 'idle' ? (
+              <motion.button whileTap={{ scale: 0.92 }} onClick={() => { setPomState('work'); setPomSecs(25 * 60); triggerHaptic('medium'); }}
+                style={{ padding: '10px 18px', borderRadius: 12, background: 'rgba(196,96,122,0.15)', border: '1px solid rgba(196,96,122,0.3)', color: 'var(--journal)', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                ▶ Başlat
+              </motion.button>
+            ) : (
+              <motion.button whileTap={{ scale: 0.92 }} onClick={() => { setPomState('idle'); setPomSecs(25 * 60); triggerHaptic('medium'); }}
+                style={{ padding: '10px 18px', borderRadius: 12, background: 'rgba(107,114,128,0.15)', border: '1px solid rgba(107,114,128,0.3)', color: 'var(--muted)', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                ■ Durdur
+              </motion.button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Tab bar */}
       <div className="tab-bar">
-        {(['today','upcoming','all'] as const).map((t) => (
+        {(['today','upcoming','all','done'] as const).map((t) => (
           <button key={t} onClick={() => { triggerHaptic('light'); setTab(t); }}
             className={`tab-item${tab === t ? ' active' : ''}`}>
-            {t === 'today' ? '⚡ Today' : t === 'upcoming' ? '📅 Soon' : '✦ All'}
+            {t === 'today' ? '⚡ Today' : t === 'upcoming' ? '📅 Soon' : t === 'all' ? '❖ All' : '✅ Done'}
           </button>
         ))}
       </div>
@@ -192,7 +252,7 @@ export default function Life() {
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <div className="emoji"></div>
-          <p>{tab === 'all' ? 'No tasks yet' : tab === 'today' ? 'Nothing due today!' : 'No upcoming tasks'}</p>
+          <p>{tab === 'all' ? 'No tasks yet' : tab === 'today' ? 'Nothing due today!' : tab === 'done' ? 'No completed tasks yet' : 'No upcoming tasks'}</p>
         </div>
       ) : (
         <AnimatePresence mode="popLayout">

@@ -39,7 +39,6 @@ function getGreeting() {
 }
 
 export default function Home() {
-  const [aiInsight] = useState('AI anticipates a productive day ahead based on your morning routine.');
   const navigate  = useNavigate();
   const qc        = useQueryClient();
   const user      = useAuthStore((s) => s.user);
@@ -48,6 +47,15 @@ export default function Home() {
   const [moodSaved, setMoodSaved] = useState(false);
   const [moodSuggestion, setMoodSuggestion] = useState<string | null>(null);
   const [moodSuggLoading, setMoodSuggLoading] = useState(false);
+
+  // Live AI greeting — cached 1 h on backend
+  const { data: greetingData } = useQuery<{ greeting: string }>({ 
+    queryKey: ['ai-greeting'],
+    queryFn:  () => api.get('/ai/greeting').then((r) => r.data),
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+  });
+  const aiInsight = greetingData?.greeting ?? 'Your personal AI is ready — log your mood to get started.';
 
   const { data: tasks = [] } = useQuery<Task[]>({
     queryKey: ['tasks'],

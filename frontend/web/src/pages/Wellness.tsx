@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useState, useMemo } from 'react';
 import AICard from '../components/AICard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -51,8 +51,15 @@ export default function Wellness() {
   const addToast = useAppStore((s) => s.addToast);
   const [tab, setTab]             = useState<'mood'|'sleep'|'fitness'>('mood');
   const [waterConsumed, setWater] = useState(() => {
-    const stored = sessionStorage.getItem('water_today');
-    return stored ? Number(stored) : 0;
+    const today = new Date().toDateString();
+    try {
+      const stored = localStorage.getItem('water_today');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.date === today) return parsed.count as number;
+      }
+    } catch {}
+    return 0;
   });
 
   // Mood
@@ -123,6 +130,24 @@ export default function Wellness() {
     onError:   () => addToast('error', 'Failed to delete'),
   });
 
+  const moodStreak = useMemo(() => {
+    if (!moods.length) return 0;
+    const dates = [...new Set(moods.map((m) => m.created_at.split('T')[0]))].sort().reverse();
+    let streak = 0;
+    let check = new Date().toISOString().split('T')[0];
+    for (const d of dates) {
+      if (d === check) {
+        streak++;
+        const dt = new Date(check); dt.setDate(dt.getDate() - 1);
+        check = dt.toISOString().split('T')[0];
+      } else if (d < check) break;
+    }
+    return streak;
+  }, [moods]);
+
+  const bestMood  = moods.length ? moods.reduce((a, b) => a.mood_score >= b.mood_score ? a : b) : null;
+  const worstMood = moods.length ? moods.reduce((a, b) => a.mood_score <= b.mood_score ? a : b) : null;
+
   const chartData = (() => {
     const today = new Date();
     return Array.from({ length: 7 }).map((_, i) => {
@@ -141,8 +166,8 @@ export default function Wellness() {
   function updateWater(delta: number) {
     const next = Math.max(0, Math.min(WATER_GOAL, waterConsumed + delta));
     setWater(next);
-    sessionStorage.setItem('water_today', String(next));
-    if (delta > 0 && next === WATER_GOAL) addToast('success', 'Hydration goal reached! ');
+    localStorage.setItem('water_today', JSON.stringify({ date: new Date().toDateString(), count: next }));
+    if (delta > 0 && next === WATER_GOAL) addToast('success', 'Hidrasyon hedefine ulaştın! 💧');
   }
 
 
@@ -165,6 +190,12 @@ export default function Wellness() {
             <p style={{ fontSize: 26, fontWeight: 800, color: '#5dd7b5' }}>{waterConsumed}/{WATER_GOAL}</p>
             <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 800, letterSpacing: '0.08em', marginTop: 2 }}>WATER</p>
           </div>
+          {moodStreak > 0 && (
+            <div className="stat-card" style={{ borderTop: '2px solid #f97316' }}>
+              <p style={{ fontSize: 26, fontWeight: 800, color: '#f97316' }}>{moodStreak}</p>
+              <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 800, letterSpacing: '0.08em', marginTop: 2 }}>🔥 STREAK</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -190,16 +221,36 @@ export default function Wellness() {
                   <SkeletonCard variant="stat" count={2} />
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={80} style={{ marginTop: 4 }}>
-                  <BarChart data={chartData} barSize={22}>
-                    <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, 10]} hide />
-                    <Tooltip contentStyle={{ background: 'var(--surface)', border: 'none', borderRadius: 8, fontSize: 12 }} />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                      {chartData.map((entry, i) => <Cell key={i} fill={barColor(entry.value)} />)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                <>
+                  <ResponsiveContainer width="100%" height={80} style={{ marginTop: 4 }}>
+                    <BarChart data={chartData} barSize={22}>
+                      <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />
+                      <YAxis domain={[0, 10]} hide />
+                      <Tooltip contentStyle={{ background: 'var(--surface)', border: 'none', borderRadius: 8, fontSize: 12 }} />
+                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                        {chartData.map((entry, i) => <Cell key={i} fill={barColor(entry.value)} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  {(bestMood || worstMood) && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                      {bestMood && (
+                        <div style={{ flex: 1, padding: '8px 12px', borderRadius: 10, background: 'rgba(61,170,134,0.1)', border: '1px solid rgba(61,170,134,0.2)' }}>
+                          <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700 }}>EN İYİ GÜN</p>
+                          <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--wellness)' }}>{bestMood.mood_score}/10</p>
+                          <p style={{ fontSize: 10, color: 'var(--muted)' }}>{new Date(bestMood.created_at).toLocaleDateString('tr', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                        </div>
+                      )}
+                      {worstMood && worstMood.id !== bestMood?.id && (
+                        <div style={{ flex: 1, padding: '8px 12px', borderRadius: 10, background: 'rgba(196,96,122,0.1)', border: '1px solid rgba(196,96,122,0.2)' }}>
+                          <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700 }}>EN ZOR GÜN</p>
+                          <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--journal)' }}>{worstMood.mood_score}/10</p>
+                          <p style={{ fontSize: 10, color: 'var(--muted)' }}>{new Date(worstMood.created_at).toLocaleDateString('tr', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

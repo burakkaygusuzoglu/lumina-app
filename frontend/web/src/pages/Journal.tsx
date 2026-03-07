@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useState, useMemo } from 'react';
 import AICard from '../components/AICard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -57,6 +57,33 @@ export default function Journal() {
     staleTime: 30_000,
   });
 
+  const journalStreak = useMemo(() => {
+    if (!entries.length) return 0;
+    const dates = [...new Set(entries.map((e) => e.created_at.split('T')[0]))].sort().reverse();
+    let streak = 0;
+    const today = new Date().toISOString().split('T')[0];
+    let check = today;
+    for (const d of dates) {
+      if (d === check) {
+        streak++;
+        const dt = new Date(check); dt.setDate(dt.getDate() - 1);
+        check = dt.toISOString().split('T')[0];
+      } else if (d < check) break;
+    }
+    return streak;
+  }, [entries]);
+
+  function exportJournal() {
+    const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `lumina-journal-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast('success', 'Journal exported!');
+  }
+
   const createMutation = useMutation({
     mutationFn: () => api.post('/journal/entry', { content: newContent, mood: newMood, tags: newTags }).then((r) => r.data),
     onSuccess: () => {
@@ -109,13 +136,27 @@ export default function Journal() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>Journal</h1>
-          <p style={{ fontSize: 13, color: 'var(--muted)' }}>{entries.length} entries written</p>
+          <p style={{ fontSize: 13, color: 'var(--muted)' }}>
+            {entries.length} entries written
+            {journalStreak > 0 && (
+              <span style={{ marginLeft: 8, color: '#f97316', fontWeight: 700 }}>🔥 {journalStreak} day streak
+              </span>
+            )}
+          </p>
         </div>
-        <motion.button whileTap={{ scale: 0.92 }} className="fab"
-          onClick={() => setWriting(true)}
-          style={{ background: 'linear-gradient(135deg, var(--journal), #e07a8a)' }}>
-          +
-        </motion.button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {entries.length > 0 && (
+            <button onClick={exportJournal} title="Export JSON"
+              style={{ padding: '8px 12px', borderRadius: 10, background: 'rgba(196,96,122,0.12)', border: '1px solid rgba(196,96,122,0.25)', color: 'var(--journal)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              ↓ Export
+            </button>
+          )}
+          <motion.button whileTap={{ scale: 0.92 }} className="fab"
+            onClick={() => setWriting(true)}
+            style={{ background: 'linear-gradient(135deg, var(--journal), #e07a8a)' }}>
+            +
+          </motion.button>
+        </div>
       </div>
 
       {/* ── AI Prompt Card — immersive premium design ── */}
