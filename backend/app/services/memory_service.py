@@ -3,9 +3,14 @@ Lumina Life OS — Memory Service
 Author: Burak Kaygusuzoglu <bkaygusuzoglu@hotmail.com>
 
 Full CRUD operations for the memories table in Supabase.
-Also provides keyword-based search and "On This Day" retrieval.
-Semantic (vector) search is prepared and will activate when
-the Pinecone key is configured.
+Semantic (vector) search via Pinecone activates automatically when
+PINECONE_API_KEY is set; otherwise falls back to ILIKE full-text search.
+
+Pinecone index requirements (create once at app.pinecone.io):
+  name   : lumina-memories  (matches PINECONE_INDEX env var)
+  metric : cosine
+  dims   : 1024             (multilingual-e5-large)
+  type   : serverless
 """
 
 from __future__ import annotations
@@ -16,13 +21,80 @@ from typing import Any
 
 from fastapi import HTTPException, status
 
-from app.config import supabase_admin
+from app.config import settings, supabase_admin
 from app.database import db_delete, db_insert, db_select, db_select_one, db_update
 from app.models.memory import MemoryCreate, MemoryResponse, MemoryType, MemoryUpdate
 
 logger = logging.getLogger(__name__)
 
 _TABLE = "memories"
+_EMBED_MODEL = "multilingual-e5-large"  # 1024-dim, supports Turkish + English
+
+# ── Lazy Pinecone singleton ───────────────────────────────────────────────────
+_pc_client: Any = None
+_pc_index: Any = None
+
+
+def _get_pinecone_index() -> Any | None:
+    """Return the Pinecone index singleton, or None if not configured."""
+    global _pc_client, _pc_index
+    if not settings.pinecone_api_key:
+        return None
+    if _pc_index is not None:
+        return _pc_index
+    try:
+        from pinecone import Pinecone
+        _pc_client = Pinecone(api_key=settings.pinecone_api_key)
+        _pc_index = _pc_client.Index(settings.pinecone_index)
+        logger.info("Pinecone connected — index: %s", settings.pinecone_index)
+    except Exception as exc:
+        logger.warning("Pinecone init failed: %s — using ILIKE fallback", exc)
+        return None
+    return _pc_index
+
+
+def _embed_text(text: str) -> list[float] | None:
+    """Embed a single text string using Pinecone's hosted inference.
+
+    Returns a list of floats (1024-dim), or None on failure.
+    """
+    if not _pc_client:
+        _get_pinecone_index()  # ensure client is initialised
+    if not _pc_client:
+        return None
+    try:
+        resp = _pc_client.inference.embed(
+            model=_EMBED_MODEL,
+            inputs=[text],
+            parameters={"input_type": "passage", "truncate": "END"},
+        )
+        return resp[0].values
+    except Exception as exc:
+        logger.warning("Pinecone embed failed: %s", exc)
+        return None
+
+
+def _embed_query(text: str) -> list[float] | None:
+    """Embed a search query string (uses query input_type for better recall)."""
+    if not _pc_client:
+        _get_pinecone_index()
+    if not _pc_client:
+        return None
+    try:
+        resp = _pc_client.inference.embed(
+            model=_EMBED_MODEL,
+            inputs=[text],
+            parameters={"input_type": "query", "truncate": "END"},
+        )
+        return resp[0].values
+    except Exception as exc:
+        logger.warning("Pinecone query embed failed: %s", exc)
+        return None
+
+
+def _memory_to_embed_text(row: dict[str, Any]) -> str:
+    """Build the string that gets embedded for a memory row."""
+    return f"{row.get('memory_type', 'note')}: {row.get('title', '')} — {row.get('content', '')}"
 
 
 class MemoryService:
@@ -58,6 +130,25 @@ class MemoryService:
             "updated_at": now,
         }
         row = await db_insert(supabase_admin, _TABLE, data)
+
+        # Sync to Pinecone (best-effort — never blocks the response)
+        index = _get_pinecone_index()
+        if index:
+            vector = _embed_text(_memory_to_embed_text(row))
+            if vector:
+                try:
+                    index.upsert(vectors=[{
+                        "id": row["id"],
+                        "values": vector,
+                        "metadata": {
+                            "user_id": user_id,
+                            "memory_type": row.get("memory_type", "note"),
+                            "title": (row.get("title") or "")[:200],
+                        },
+                    }])
+                except Exception as exc:
+                    logger.warning("Pinecone upsert failed: %s", exc)
+
         return MemoryResponse(**row)
 
     async def get_memories(
@@ -158,6 +249,27 @@ class MemoryService:
             updates["is_pinned"] = payload.is_pinned
 
         row = await db_update(supabase_admin, _TABLE, memory_id, updates)
+
+        # Re-embed if textual content changed
+        content_changed = any(k in updates for k in ("title", "content", "memory_type"))
+        if content_changed:
+            index = _get_pinecone_index()
+            if index:
+                vector = _embed_text(_memory_to_embed_text(row))
+                if vector:
+                    try:
+                        index.upsert(vectors=[{
+                            "id": memory_id,
+                            "values": vector,
+                            "metadata": {
+                                "user_id": user_id,
+                                "memory_type": row.get("memory_type", "note"),
+                                "title": (row.get("title") or "")[:200],
+                            },
+                        }])
+                    except Exception as exc:
+                        logger.warning("Pinecone re-embed failed: %s", exc)
+
         return MemoryResponse(**row)
 
     async def delete_memory(
@@ -178,27 +290,66 @@ class MemoryService:
         await self.get_memory_by_id(user_id, memory_id)
         await db_delete(supabase_admin, _TABLE, memory_id, user_id=user_id)
 
+        # Remove from Pinecone
+        index = _get_pinecone_index()
+        if index:
+            try:
+                index.delete(ids=[memory_id])
+            except Exception as exc:
+                logger.warning("Pinecone delete failed: %s", exc)
+
     async def search_memories(
         self,
         user_id: str,
         query: str,
         limit: int = 10,
     ) -> list[MemoryResponse]:
-        """Keyword-based full-text search over the user's memories.
+        """Search the user's memories.
 
-        Uses Supabase's PostgreSQL ``ilike`` for case-insensitive substring
-        matching.  Will be upgraded to vector search once Pinecone is connected.
+        Uses Pinecone vector search when configured (semantic — finds conceptually
+        related memories even without keyword matches).  Falls back to PostgreSQL
+        ILIKE substring matching when Pinecone is unavailable.
 
         Args:
             user_id: UUID of the requesting user.
-            query: Search string.
+            query: Natural-language search string.
             limit: Maximum results to return.
 
         Returns:
-            List of matching ``MemoryResponse`` objects.
+            List of matching ``MemoryResponse`` objects, best match first.
         """
         if not query.strip():
             return []
+
+        # ── Semantic search via Pinecone ─────────────────────────────────────
+        index = _get_pinecone_index()
+        if index:
+            query_vec = _embed_query(query)
+            if query_vec:
+                try:
+                    results = index.query(
+                        vector=query_vec,
+                        top_k=limit,
+                        filter={"user_id": {"$eq": user_id}},
+                        include_metadata=True,
+                    )
+                    ids = [m["id"] for m in results.get("matches", [])]
+                    if ids:
+                        rows = (
+                            supabase_admin
+                            .table(_TABLE)
+                            .select("*")
+                            .in_("id", ids)
+                            .execute()
+                        ).data or []
+                        # Re-order rows by Pinecone score order
+                        id_order = {mid: i for i, mid in enumerate(ids)}
+                        rows.sort(key=lambda r: id_order.get(r["id"], 999))
+                        return [MemoryResponse(**r) for r in rows]
+                except Exception as exc:
+                    logger.warning("Pinecone search failed, falling back to ILIKE: %s", exc)
+
+        # ── Fallback: ILIKE keyword search ───────────────────────────────────
         try:
             response = (
                 supabase_admin
