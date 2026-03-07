@@ -10,51 +10,35 @@ only when the vault item is individually fetched by its owner.
 
 from __future__ import annotations
 
-from datetime import datetime
-from enum import Enum
-
 from pydantic import BaseModel, Field, ConfigDict
-
-
-class VaultItemType(str, Enum):
-    """Category of vault item.
-
-    - ``password``  → Website/app credentials
-    - ``api_key``   → Developer API keys / tokens
-    - ``note``      → Private encrypted text
-    - ``document``  → Sensitive document content
-    - ``card``      → Payment card details
-    """
-
-    PASSWORD = "password"
-    API_KEY = "api_key"
-    NOTE = "note"
-    DOCUMENT = "document"
-    CARD = "card"
 
 
 class VaultItemCreate(BaseModel):
     """Payload for storing an item in the Vault.
 
     Attributes:
-        name: Human-readable label for the item.
-        item_type: Category of the secret.
+        title: Human-readable label for the item.
+        category: Category of the secret (password/note/card/document).
         username: Login username (for ``password`` type).
         password: Secret value to encrypt.
         url: Associated website URL.
-        notes: Additional plaintext notes (will also be encrypted).
-        metadata: Arbitrary extra data stored encrypted.
+        content: Secure note / document content (encrypted at rest).
+        card_number: Card number (card category; packed into encrypted notes).
+        expiry: Card expiry MM/YY (packed into encrypted notes).
+        cvv: Card CVV (packed into encrypted notes).
     """
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    name: str = Field(..., min_length=1, max_length=255, description="Display name")
-    item_type: VaultItemType = Field(default=VaultItemType.PASSWORD)
+    title: str = Field(..., min_length=1, max_length=255, description="Display name")
+    category: str = Field(default="password", description="password/note/card/document")
     username: str | None = Field(None, max_length=255)
     password: str | None = Field(None, description="Secret to encrypt")
     url: str | None = Field(None, max_length=2048)
-    notes: str | None = Field(None, max_length=5000, description="Private notes (encrypted)")
-    metadata: dict = Field(default_factory=dict, description="Extra encrypted data")
+    content: str | None = Field(None, max_length=5000, description="Note/document content (encrypted)")
+    card_number: str | None = Field(None, description="Card number (card category)")
+    expiry: str | None = Field(None, description="Card expiry MM/YY")
+    cvv: str | None = Field(None, description="Card CVV")
 
 
 class VaultItemUpdate(BaseModel):
@@ -62,43 +46,36 @@ class VaultItemUpdate(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    name: str | None = Field(None, max_length=255)
+    title: str | None = Field(None, max_length=255)
     username: str | None = None
     password: str | None = None
     url: str | None = None
-    notes: str | None = None
-    metadata: dict | None = None
+    content: str | None = None
+    card_number: str | None = None
+    expiry: str | None = None
+    cvv: str | None = None
 
 
 class VaultItemResponse(BaseModel):
     """Vault item returned from the API.
 
-    Sensitive fields (``password``, ``notes``) are only populated when the
-    item is fetched individually via ``GET /vault/{id}``.  In list views,
-    they are omitted to minimise exposure.
-
-    Attributes:
-        id: UUID primary key.
-        user_id: Owner's UUID.
-        name: Display label.
-        item_type: Category.
-        username: Login username if applicable.
-        password: Decrypted secret (individual fetch only).
-        url: Associated URL.
-        notes: Decrypted private notes (individual fetch only).
-        created_at: Creation timestamp.
-        updated_at: Last update timestamp.
+    Sensitive fields (``password``, ``content``, card fields) are only
+    populated when the item is fetched individually via ``GET /vault/{id}``.
+    In list views they are omitted to minimise exposure.
     """
 
     model_config = ConfigDict(from_attributes=True)
 
     id: str
     user_id: str
-    name: str
-    item_type: VaultItemType
+    title: str
+    category: str
     username: str | None = None
     password: str | None = Field(None, description="Populated on individual fetch only")
     url: str | None = None
-    notes: str | None = Field(None, description="Populated on individual fetch only")
-    created_at: datetime
-    updated_at: datetime
+    content: str | None = Field(None, description="Populated on individual fetch only")
+    card_number: str | None = None
+    expiry: str | None = None
+    cvv: str | None = None
+    created_at: str
+    updated_at: str

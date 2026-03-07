@@ -51,7 +51,7 @@ export default function Profile() {
     try {
       addToast('info', 'Preparing your data for export...');
       const results = await Promise.all([
-        api.get('/journal').then(r => r.data).catch(() => []),
+        api.get('/journal/entries').then(r => r.data).catch(() => []),
         api.get('/memories').then(r => r.data).catch(() => []),
         api.get('/tasks').then(r => r.data).catch(() => [])
       ]);

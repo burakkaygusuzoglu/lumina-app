@@ -34,18 +34,17 @@ export interface Task {
 export interface MoodEntry {
   id: string;
   mood_score: number;
-  energy_level: number;
   note?: string;
-  recorded_at: string;
+  tags?: string[];
   created_at: string;
 }
 
 export interface SleepEntry {
   id: string;
   hours_slept: number;
-  hours?: number;
+  hours?: number; // legacy alias
   quality: number;
-  recorded_at: string;
+  notes?: string;
   created_at: string;
 }
 

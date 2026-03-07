@@ -3,7 +3,7 @@ from app.models.user import UserCreate, UserLogin, UserResponse, Token, TokenDat
 from app.models.memory import MemoryCreate, MemoryUpdate, MemoryResponse, MemoryType
 from app.models.wellness import MoodEntry, SleepEntry, HealthAppointment, WellnessStats
 from app.models.task import TaskCreate, TaskUpdate, TaskResponse, TaskPriority
-from app.models.vault import VaultItemCreate, VaultItemUpdate, VaultItemResponse, VaultItemType
+from app.models.vault import VaultItemCreate, VaultItemUpdate, VaultItemResponse
 from app.models.insight import InsightResponse, WeeklyReport, PatternAlert
 
 __all__ = [
@@ -11,6 +11,6 @@ __all__ = [
     "MemoryCreate", "MemoryUpdate", "MemoryResponse", "MemoryType",
     "MoodEntry", "SleepEntry", "HealthAppointment", "WellnessStats",
     "TaskCreate", "TaskUpdate", "TaskResponse", "TaskPriority",
-    "VaultItemCreate", "VaultItemUpdate", "VaultItemResponse", "VaultItemType",
+    "VaultItemCreate", "VaultItemUpdate", "VaultItemResponse",
     "InsightResponse", "WeeklyReport", "PatternAlert",
 ]

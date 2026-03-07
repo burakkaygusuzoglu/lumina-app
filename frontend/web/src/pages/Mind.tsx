@@ -320,8 +320,8 @@ export default function Mind() {
                 style={{ borderLeft: `3px solid ${TYPE_COLOR[mem.memory_type ?? ''] ?? 'var(--border)'}`, backgroundImage: `linear-gradient(135deg, ${TYPE_BG[mem.memory_type ?? ''] ?? 'transparent'}, transparent 70%)` }}
               >
                 {/* Photo */}
-                {mem.photo_url && (
-                  <img src={mem.photo_url} alt="" style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 'var(--r-md)', marginBottom: 12 }} />
+                {mem.metadata?.photo_url && (
+                  <img src={mem.metadata.photo_url} alt="" style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 'var(--r-md)', marginBottom: 12 }} />
                 )}
 
                 {/* Header row */}
@@ -333,8 +333,8 @@ export default function Mind() {
                       {mem.content}
                     </p>
                   </div>
-                  {mem.mood_score && (
-                    <span style={{ fontSize: 18, flexShrink: 0 }}>{MOOD_EMOJIS[mem.mood_score] ?? ''}</span>
+                  {mem.metadata?.mood_score && (
+                    <span style={{ fontSize: 18, flexShrink: 0 }}>{MOOD_EMOJIS[mem.metadata.mood_score] ?? ''}</span>
                   )}
                 </div>
 
@@ -348,9 +348,9 @@ export default function Mind() {
                 )}
 
                 {/* Importance stars */}
-                {mem.importance && (
+                {mem.metadata?.importance && (
                   <p style={{ fontSize: 12, marginBottom: 8 }}>
-                    {''.repeat(mem.importance)}{''.repeat(5 - mem.importance)}
+                    {'★'.repeat(mem.metadata.importance)}{'☆'.repeat(5 - mem.metadata.importance)}
                   </p>
                 )}
 

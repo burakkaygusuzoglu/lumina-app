@@ -10,6 +10,7 @@ the ``EncryptionService``.
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime, timezone
 
@@ -19,7 +20,7 @@ from app.config import supabase_admin
 from app.database import db_delete, db_insert, db_select, db_select_one, db_update
 from app.middleware.auth_middleware import get_current_user
 from app.models.user import TokenData
-from app.models.vault import VaultItemCreate, VaultItemResponse, VaultItemType, VaultItemUpdate
+from app.models.vault import VaultItemCreate, VaultItemResponse, VaultItemUpdate
 from app.services.encryption_service import EncryptionService
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,36 @@ _TABLE = "vault_items"
 _enc = EncryptionService()
 
 
+def _build_notes_payload(payload: VaultItemCreate | VaultItemUpdate) -> str | None:
+    """Pack content + card fields into a single JSON string for encryption.
+
+    For ``card`` category items the card_number, expiry and cvv are
+    bundled together with any plain content so they are all encrypted
+    in one ``notes_encrypted`` column.
+
+    Args:
+        payload: Create or update payload.
+
+    Returns:
+        JSON string if any notes-related field is present, else ``None``.
+    """
+    category = getattr(payload, "category", None) or ""
+    content  = getattr(payload, "content", None)
+    card_num = getattr(payload, "card_number", None)
+    expiry   = getattr(payload, "expiry", None)
+    cvv      = getattr(payload, "cvv", None)
+
+    if category == "card" and any([card_num, expiry, cvv, content]):
+        return json.dumps({
+            "content":     content or "",
+            "card_number": card_num or "",
+            "expiry":      expiry or "",
+            "cvv":         cvv or "",
+        })
+
+    return content  # plain string or None
+
+
 def _encrypt_sensitive(payload: VaultItemCreate | VaultItemUpdate) -> dict:
     """Build a database-ready dict with sensitive fields encrypted.
 
@@ -36,74 +67,94 @@ def _encrypt_sensitive(payload: VaultItemCreate | VaultItemUpdate) -> dict:
         payload: Create or update payload.
 
     Returns:
-        Dict with ``password`` and ``notes`` encrypted (if present).
+        Dict with ``password_encrypted`` and ``notes_encrypted`` where present.
     """
     data: dict = {}
-    if hasattr(payload, "name") and payload.name is not None:
-        data["name"] = payload.name
-    if hasattr(payload, "item_type") and payload.item_type is not None:
-        data["item_type"] = payload.item_type.value
-    if payload.username is not None:
+
+    # Map new frontend field names to DB column names
+    title = getattr(payload, "title", None)
+    category = getattr(payload, "category", None)
+
+    if title is not None:
+        data["name"] = title
+    if category is not None:
+        data["item_type"] = category
+    if getattr(payload, "username", None) is not None:
         data["username"] = payload.username
-    if payload.url is not None:
+    if getattr(payload, "url", None) is not None:
         data["url"] = payload.url
 
-    # Encrypt secrets
-    if payload.password is not None:
+    # Encrypt password
+    if getattr(payload, "password", None) is not None:
         data["password_encrypted"] = _enc.encrypt(payload.password)
-    if payload.notes is not None:
-        data["notes_encrypted"] = _enc.encrypt(payload.notes)
+
+    # Encrypt notes (content + card fields packed together)
+    notes_str = _build_notes_payload(payload)
+    if notes_str is not None:
+        data["notes_encrypted"] = _enc.encrypt(notes_str)
 
     return data
 
 
 def _row_to_response(row: dict, include_secrets: bool = False) -> VaultItemResponse:
-    """Convert a raw row to a VaultItemResponse.
+    """Convert a raw DB row to a ``VaultItemResponse``.
 
     Args:
         row: Raw database row dict.
-        include_secrets: When ``True``, decrypt and populate password/notes.
+        include_secrets: When ``True``, decrypt and populate password/content/card fields.
 
     Returns:
         ``VaultItemResponse`` (secrets omitted unless ``include_secrets=True``).
     """
     decrypted_password: str | None = None
-    decrypted_notes: str | None = None
+    decrypted_content:  str | None = None
+    card_number: str | None = None
+    expiry:      str | None = None
+    cvv:         str | None = None
+
+    category = row.get("item_type", "password")
 
     if include_secrets:
         if row.get("password_encrypted"):
-            decrypted_password = _enc.decrypt(row["password_encrypted"])
+            try:
+                decrypted_password = _enc.decrypt(row["password_encrypted"])
+            except Exception:
+                decrypted_password = None
+
         if row.get("notes_encrypted"):
-            decrypted_notes = _enc.decrypt(row["notes_encrypted"])
+            try:
+                raw = _enc.decrypt(row["notes_encrypted"])
+                if category == "card":
+                    # Try to unpack card JSON bundle
+                    try:
+                        bundle = json.loads(raw)
+                        decrypted_content = bundle.get("content") or None
+                        card_number = bundle.get("card_number") or None
+                        expiry      = bundle.get("expiry")      or None
+                        cvv         = bundle.get("cvv")         or None
+                    except (json.JSONDecodeError, AttributeError):
+                        decrypted_content = raw
+                else:
+                    decrypted_content = raw
+            except Exception:
+                decrypted_content = None
 
     return VaultItemResponse(
         id=row["id"],
         user_id=row["user_id"],
-        name=row["name"],
-        item_type=VaultItemType(row["item_type"]),
+        title=row["name"],
+        category=category,
         username=row.get("username"),
         password=decrypted_password,
         url=row.get("url"),
-        notes=decrypted_notes,
-        created_at=row["created_at"],
-        updated_at=row["updated_at"],
+        content=decrypted_content,
+        card_number=card_number,
+        expiry=expiry,
+        cvv=cvv,
+        created_at=str(row["created_at"]),
+        updated_at=str(row["updated_at"]),
     )
 
-
-@router.get(
-    "/{item_id}",
-    response_model=VaultItemResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Get single vault item with secrets",
-)
-async def get_vault_item(
-    item_id: str,
-    current_user: TokenData = Depends(get_current_user),
-) -> VaultItemResponse:
-    row = await db_select_one(supabase_admin, _TABLE, {"id": item_id, "user_id": current_user.user_id})
-    if not row:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
-    return _row_to_response(row, include_secrets=True)
 
 @router.get(
     "",
@@ -122,7 +173,7 @@ async def list_vault_items(
         current_user: Injected from JWT.
 
     Returns:
-        List of ``VaultItemResponse`` with ``password`` and ``notes`` as ``None``.
+        List of ``VaultItemResponse`` with ``password`` and ``content`` as ``None``.
     """
     rows = await db_select(
         supabase_admin, _TABLE, {"user_id": current_user.user_id}, order_by="name asc"
@@ -142,8 +193,9 @@ async def create_vault_item(
 ) -> VaultItemResponse:
     """Encrypt and persist a new vault item.
 
-    The ``password`` and ``notes`` fields are encrypted using AES-256-GCM
-    before being written to the database.
+    The ``password`` and ``content`` fields are encrypted using AES-256-GCM
+    before being written to the database. Card fields are packed into the
+    encrypted notes bundle.
 
     Args:
         payload: ``VaultItemCreate`` body.
@@ -180,7 +232,7 @@ async def get_vault_item(
         current_user: Injected from JWT.
 
     Returns:
-        ``VaultItemResponse`` with ``password`` and ``notes`` decrypted.
+        ``VaultItemResponse`` with ``password`` and ``content`` decrypted.
 
     Raises:
         HTTPException: 404 if not found or not owned by user.

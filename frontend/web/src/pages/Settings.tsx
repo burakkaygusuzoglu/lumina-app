@@ -106,20 +106,20 @@ export default function Settings() {
     {
       title: 'NOTIFICATIONS',
       rows: [
-        { icon: '””', label: 'Push Notifications', description: 'Get reminders and updates', value: notifications, onChange: requestPushPermission },
-        { icon: '°', label: 'Daily Reminder', description: 'Morning journal prompt at 9 AM', value: dailyReminder, onChange: handleDailyReminder },
+        { icon: '🔔', label: 'Push Notifications', description: 'Get reminders and updates', value: notifications, onChange: requestPushPermission },
+        { icon: '⏰', label: 'Daily Reminder', description: 'Morning journal prompt at 9 AM', value: dailyReminder, onChange: handleDailyReminder },
       ],
     },
     {
       title: 'APPEARANCE',
       rows: [
-        { icon: '“', label: 'Compact View', description: 'Show more content in less space', value: compactView, onChange: (v: boolean) => { setCompactView(v); save('compact', v); } },
+        { icon: '📐', label: 'Compact View', description: 'Show more content in less space', value: compactView, onChange: (v: boolean) => { setCompactView(v); save('compact', v); } },
       ],
     },
     {
       title: 'PRIVACY',
       rows: [
-        { icon: '“Š', label: 'Analytics', description: 'Help improve the app', value: analytics, onChange: (v: boolean) => { setAnalytics(v); save('analytics', v); } },
+        { icon: '📊', label: 'Analytics', description: 'Help improve the app', value: analytics, onChange: (v: boolean) => { setAnalytics(v); save('analytics', v); } },
       ],
     },
   ];
@@ -129,7 +129,7 @@ export default function Settings() {
       <div style={{ marginBottom: 24 }}><AICard insight={aiInsight} /></div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button className="btn-icon" onClick={() => navigate(-1)} style={{ width: 36, height: 36 }}>€¹</button>
+        <button className="btn-icon" onClick={() => navigate(-1)} style={{ width: 36, height: 36 }}>←</button>
         <h1 style={{ fontSize: 24, fontWeight: 800 }}>Settings</h1>
       </div>
 
@@ -183,16 +183,16 @@ export default function Settings() {
         <div className="card">
           <p className="section-label" style={{ marginBottom: 6 }}>ABOUT</p>
           {[
-            { icon: '“‹', label: 'Privacy Policy' },
-            { icon: '“„', label: 'Terms of Service' },
-            { icon: '›', label: 'Report a Bug' },
-            { icon: '­', label: 'Rate the App' },
+            { icon: '🔒', label: 'Privacy Policy' },
+            { icon: '📄', label: 'Terms of Service' },
+            { icon: '🐛', label: 'Report a Bug' },
+            { icon: '⭐', label: 'Rate the App' },
           ].map((item) => (
             <button key={item.label} onClick={() => handleAboutAction(item.label)}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid var(--border)', color: 'var(--text)', textAlign: 'left' }}>
               <span style={{ fontSize: 18, width: 28, textAlign: 'center' }}>{item.icon}</span>
               <span style={{ flex: 1, fontSize: 14 }}>{item.label}</span>
-              <span style={{ color: 'var(--muted)' }}>€º</span>
+              <span style={{ color: 'var(--muted)' }}>›</span>
             </button>
           ))}
         </div>

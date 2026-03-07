@@ -228,7 +228,7 @@ function VaultReveal({ itemId, type, label, onCopy }: { itemId: string, type: 'p
   useEffect(() => {
     async function doDecrypt() {
       if (data && e2eKey) {
-        const raw = type === 'password' ? data.password : data.notes || data.content; // fallback check
+        const raw = type === 'password' ? data.password : data.content;
         if (!raw) {
           setDecryptedText('No content');
           return;

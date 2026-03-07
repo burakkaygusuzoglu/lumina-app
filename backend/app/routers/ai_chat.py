@@ -121,7 +121,9 @@ async def generate_daily_briefing(
         
     try:
         sleep_rows = await db_select(
-            supabase_admin, "sleep_entries", {"user_id": current_user.user_id}, "created_at desc", 1
+            supabase_admin, "sleep_entries",
+            filters={"user_id": current_user.user_id},
+            order_by="created_at desc", limit=1,
         )
         sleep_data = sleep_rows[0] if sleep_rows else None
     except Exception:
@@ -179,9 +181,9 @@ async def generate_weekly_report(
         user_id=current_user.user_id, limit=30
     )
     mood_this_week = [
-        {"mood": m.mood, "logged_at": m.logged_at.isoformat()}
+        {"mood": m.mood_score, "logged_at": m.created_at.isoformat()}
         for m in mood_history
-        if m.logged_at >= week_start
+        if m.created_at.isoformat() >= week_start.isoformat()
     ]
 
     tasks = await db_select(
@@ -258,7 +260,7 @@ async def analyze_mood_pattern(
         user_id=current_user.user_id, limit=30
     )
     mood_dicts = [
-        {"mood": m.mood, "logged_at": m.logged_at.isoformat(), "note": m.note}
+        {"mood": m.mood_score, "logged_at": m.created_at.isoformat(), "note": m.note}
         for m in mood_history
     ]
 
@@ -314,7 +316,7 @@ async def get_daily_greeting(
 
     # Fetch context data
     mood_history = await _wellness.get_mood_history(user_id=current_user.user_id, limit=7)
-    mood_dicts = [{"mood": m.mood, "logged_at": m.logged_at.isoformat()} for m in mood_history]
+    mood_dicts = [{"mood": m.mood_score, "logged_at": m.created_at.isoformat()} for m in mood_history]
 
     tasks = await db_select(
         supabase_admin, "tasks",
@@ -324,8 +326,8 @@ async def get_daily_greeting(
     tasks_today = [t for t in tasks if t.get("status") not in ("done", "cancelled")][:5]
 
     journals = await db_select(
-        supabase_admin, "journal_entries",
-        filters={"user_id": current_user.user_id},
+        supabase_admin, "memories",
+        filters={"user_id": current_user.user_id, "memory_type": "journal"},
         order_by="created_at desc", limit=1,
     )
     snippet = journals[0].get("content", "")[:120] if journals else None
@@ -334,7 +336,7 @@ async def get_daily_greeting(
         sleep_rows = await db_select(
             supabase_admin, "sleep_entries",
             filters={"user_id": current_user.user_id},
-            order_by="date desc", limit=1,
+            order_by="created_at desc", limit=1,
         )
         sleep_data = sleep_rows[0] if sleep_rows else None
     except Exception:

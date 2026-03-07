@@ -84,7 +84,7 @@ export default function Life() {
     onSuccess: () => { 
       triggerHaptic('success');
       qc.invalidateQueries({ queryKey: ['tasks'] }); 
-      addToast('success', 'Task completed! ??'); 
+      addToast('success', 'Task completed! ✅'); 
     },
     onError:   () => addToast('error', 'Failed to complete'),
   });

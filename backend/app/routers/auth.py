@@ -144,16 +144,17 @@ async def login(request: Request, payload: UserLogin) -> Token:
 async def logout(
     current_user: TokenData = Depends(get_current_user),
 ) -> None:
-    """Invalidate the current session on Supabase.
+    """Invalidate the current session.
+
+    JWT tokens are stateless — the client discards the token on logout.
+    We perform a best-effort server-side sign-out via the admin client.
 
     Args:
         current_user: Injected from the JWT dependency.
-
-    Raises:
-        HTTPException: 500 if the logout call fails.
     """
     try:
-        supabase_admin.auth.admin.delete_user(current_user.user_id)
+        # Revoke all refresh tokens for this user without deleting the account
+        supabase_admin.auth.admin.sign_out(current_user.user_id)
     except Exception:
         # Sign-out is best-effort; client should discard the token regardless
         pass
@@ -308,7 +309,7 @@ async def export_data(
     memories  = safe_fetch("memories")
     tasks     = safe_fetch("tasks")
     moods     = safe_fetch("mood_entries")
-    vault_meta = safe_fetch("vault_items", "id,title,category,created_at")
+    vault_meta = safe_fetch("vault_items", "id,name,item_type,created_at")
     nutrition = safe_fetch("nutrition_logs")
 
     try:

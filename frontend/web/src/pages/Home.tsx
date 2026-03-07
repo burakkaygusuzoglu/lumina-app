@@ -62,7 +62,7 @@ export default function Home() {
 
   const moodMutation = useMutation({
     mutationFn: (score: number) =>
-      api.post('/wellness/mood', { mood_score: score, energy_level: score }).then((r) => r.data),
+      api.post('/wellness/mood', { mood_score: score }).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['mood'] });
       setMoodSaved(true);

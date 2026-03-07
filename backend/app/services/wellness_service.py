@@ -9,7 +9,7 @@ Also computes streaks, rolling averages, and statistical summaries.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import HTTPException, status
@@ -191,9 +191,12 @@ class WellnessService:
             supabase_admin,
             _APPOINTMENT_TABLE,
             filters={"user_id": user_id},
-            order_by="appointment_date asc",
+            order_by="date asc",
         )
         appointments = [AppointmentResponse(**r) for r in rows]
+        if upcoming_only:
+            today = datetime.now(timezone.utc).date().isoformat()
+            appointments = [a for a in appointments if a.date >= today]
         return appointments
 
     # ── Stats & Streaks ───────────────────────────────────────────────────
@@ -219,7 +222,7 @@ class WellnessService:
         all_sleep = await db_select(
             supabase_admin, _SLEEP_TABLE, {"user_id": user_id}, order_by="created_at desc"
         )
-        appointments = await self.get_appointments(user_id, upcoming_only=False)
+        appointments = await self.get_appointments(user_id, upcoming_only=True)
 
         # Filter for rolling windows
         mood_7d = all_mood[:7]
@@ -298,11 +301,18 @@ class WellnessService:
             return 0
         unique_dates = sorted(set(dates), reverse=True)
         today = datetime.now(timezone.utc).date()
+        yesterday = today - timedelta(days=1)
+
+        # Streak must start from today or yesterday (grace period for the current day)
+        last_entry = datetime.strptime(unique_dates[0], "%Y-%m-%d").date()
+        if last_entry not in (today, yesterday):
+            return 0
+
         streak = 0
-        expected = today
+        expected = last_entry
         for date_str in unique_dates:
             entry_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-            if entry_date == expected or entry_date == expected - timedelta(days=1):
+            if entry_date == expected:
                 streak += 1
                 expected = entry_date - timedelta(days=1)
             else:
