@@ -18,6 +18,7 @@ interface AuthState {
   register: (email: string, password: string, fullName: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  loginWithApple: () => Promise<void>;
   logout: () => void;
   clearError: () => void;
   setUser: (user: AuthUser) => void;
@@ -82,6 +83,22 @@ export const useAuthStore = create<AuthState>()(
         const sb = createClient(supabaseUrl, supabaseKey);
         const { error } = await sb.auth.signInWithOAuth({
           provider: 'google',
+          options: { redirectTo: `${window.location.origin}/oauth/callback` },
+        });
+        if (error) set({ error: error.message });
+      },
+
+      loginWithApple: async () => {
+        const supabaseUrl = (import.meta as { env: Record<string, string> }).env.VITE_SUPABASE_URL;
+        const supabaseKey = (import.meta as { env: Record<string, string> }).env.VITE_SUPABASE_ANON_KEY;
+        if (!supabaseUrl || !supabaseKey) {
+          set({ error: 'Apple sign-in is not configured yet.' });
+          return;
+        }
+        const { createClient } = await import('@supabase/supabase-js');
+        const sb = createClient(supabaseUrl, supabaseKey);
+        const { error } = await sb.auth.signInWithOAuth({
+          provider: 'apple',
           options: { redirectTo: `${window.location.origin}/oauth/callback` },
         });
         if (error) set({ error: error.message });
