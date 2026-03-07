@@ -8,7 +8,12 @@ import { useAuthStore } from '../store/authStore';
 import { useAppStore } from '../store/appStore';
 import type { Task, Memory, MoodEntry } from '../store/appStore';
 
-const PAGE_ANIM = { initial: { opacity: 0, y: 18 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35 } };
+const PAGE_ANIM = {
+  initial:    { opacity: 0, y: 14 },
+  animate:    { opacity: 1, y: 0  },
+  exit:       { opacity: 0, y: -8 },
+  transition: { duration: 0.38, ease: 'easeOut' as const },
+};
 
 const MODULES = [
   { path: '/mind',    label: 'Mind',    sub: 'Memories & Ideas',  img: 'https://images.unsplash.com/photo-1456324504439-367cee3b3c32?w=800&q=80',  color: 'var(--mind)'    },
@@ -105,34 +110,70 @@ export default function Home() {
 
   return (
     <motion.div {...PAGE_ANIM} className="page">
-      <div style={{ marginBottom: 24 }}>
-        <AICard insight={aiInsight} />
-      </div>
       {/*  Header  */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 500 }}>
-            {getGreeting()},
+          <p style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 3 }}>
+            {getGreeting()}
           </p>
-          <h1 style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>
-            {firstName} 
+          <h1 style={{ fontSize: 27, fontWeight: 800, fontFamily: 'var(--font-display)', fontStyle: 'italic', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+            {firstName} ✦
           </h1>
         </div>
-        <div
+        <motion.div
+          whileTap={{ scale: 0.92 }}
           onClick={() => navigate('/profile')}
           style={{
-            width: 44, height: 44, borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--mind), var(--wellness))',
+            width: 46, height: 46, borderRadius: 15,
+            background: 'linear-gradient(135deg, var(--mind) 0%, var(--wellness) 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 18, cursor: 'pointer', flexShrink: 0,
-            border: '2px solid var(--border2)',
+            fontSize: 19, cursor: 'pointer', flexShrink: 0,
+            boxShadow: '0 4px 18px rgba(123,111,218,0.4)',
+            border: '2px solid rgba(255,255,255,0.15)',
           }}
         >
           {user?.avatar_url
-            ? <img src={user.avatar_url} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-            : <span>{firstName[0]?.toUpperCase()}</span>
+            ? <img src={user.avatar_url} style={{ width: '100%', height: '100%', borderRadius: 13, objectFit: 'cover' }} />
+            : <span style={{ fontWeight: 800, fontSize: 17, color: '#fff' }}>{firstName[0]?.toUpperCase()}</span>
           }
-        </div>
+        </motion.div>
+      </div>
+
+      {/*  AI Card  */}
+      <div style={{ marginBottom: 20 }}>
+        <AICard insight={aiInsight} />
+      </div>
+
+      {/*  Quick-action shortcuts row  */}
+      <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: 24, padding: '0 4px' }}>
+        {[
+          { emoji: '📖', label: 'Journal',   color: 'var(--journal)', bg: 'rgba(196,96,122,0.15)', path: '/journal' },
+          { emoji: '😊', label: 'Mood',      color: 'var(--wellness)', bg: 'rgba(61,170,134,0.15)', path: '#mood' },
+          { emoji: '✅', label: 'Task',      color: 'var(--life)',    bg: 'rgba(74,143,212,0.15)', path: '/life' },
+          { emoji: '💡', label: 'Memory',    color: 'var(--mind)',    bg: 'rgba(123,111,218,0.15)', path: '/mind' },
+        ].map((qa) => (
+          <motion.button
+            key={qa.label}
+            className="quick-action-btn"
+            whileTap={{ scale: 0.88 }}
+            onClick={() => {
+              if (navigator.vibrate) navigator.vibrate(8);
+              if (qa.path.startsWith('#')) {
+                document.querySelector('[data-mood-card]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              } else {
+                navigate(qa.path);
+              }
+            }}
+          >
+            <div
+              className="quick-action-circle"
+              style={{ background: qa.bg, borderColor: `${qa.color}30` }}
+            >
+              {qa.emoji}
+            </div>
+            <span className="quick-action-label">{qa.label}</span>
+          </motion.button>
+        ))}
       </div>
 
       {/*  Ask Lumina AI CTA  */}
@@ -140,34 +181,38 @@ export default function Home() {
         whileTap={{ scale: 0.97 }}
         onClick={() => document.getElementById('lumina-ai-trigger')?.click()}
         style={{
-          width: '100%', marginBottom: 20, padding: '18px 20px',
-          background: 'linear-gradient(135deg, rgba(123,111,218,0.15), rgba(196,96,122,0.1))',
-          border: '1px solid rgba(123,111,218,0.3)', borderRadius: 24,
+          width: '100%', marginBottom: 22, padding: '17px 20px',
+          background: 'linear-gradient(135deg, rgba(53,43,158,0.25) 0%, rgba(196,75,114,0.18) 100%)',
+          border: '1px solid rgba(123,111,218,0.32)', borderRadius: 22,
           cursor: 'pointer', textAlign: 'left', position: 'relative', overflow: 'hidden',
-          display: 'block',
+          display: 'block', boxShadow: '0 4px 24px rgba(53,43,158,0.2), inset 0 1px 0 rgba(255,255,255,0.04)',
         }}
       >
         <div style={{ position: 'absolute', top: -20, right: -20, fontSize: 80, opacity: 0.06 }}>✦</div>
-        <p style={{ fontSize: 10, fontWeight: 800, color: 'var(--mind)', letterSpacing: '0.12em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-          ✦ <span className="pulse-dot" style={{ background: 'var(--mind)' }} /> LUMINA AI
-        </p>
+        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 80,
+          background: 'linear-gradient(270deg, rgba(196,75,114,0.15) 0%, transparent 100%)',
+          pointerEvents: 'none' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--mind)', letterSpacing: '0.12em' }}>✦ LUMINA AI</span>
+          <span className="pulse-dot" style={{ background: 'var(--mind)' }} />
+        </div>
         <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Ask me anything...</p>
-        <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 400 }}>Journal prompts · Mood analysis · Task advice</p>
+        <p style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 400 }}>Journal prompts · Mood analysis · Task advice</p>
       </motion.button>
 
-      {/*  Quick mood check-in — TikTok/Instagram reaction style  */}
+      {/*  Quick mood check-in  */}
       <div
         className="card glass"
+        data-mood-card
         style={{
-          marginBottom: 24, padding: '20px 20px 24px', position: 'relative',
-          overflow: 'hidden', borderRadius: 28, border: '1px solid var(--border2)',
+          marginBottom: 24, padding: '20px 20px 22px', position: 'relative',
+          overflow: 'hidden', borderRadius: 26, border: '1px solid var(--border2)',
           transition: 'border-color 0.4s',
         }}
       >
         {/* Dynamic glow orb that matches selected mood */}
         <div style={{ position: 'absolute', top: -50, right: -50, width: 160, height: 160, filter: 'blur(70px)', background: 'var(--gradient)', opacity: 0.12, borderRadius: '50%', pointerEvents: 'none' }} />
 
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
             <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.14em', color: 'var(--muted)', marginBottom: 3 }}>
@@ -177,13 +222,13 @@ export default function Home() {
               <motion.p initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                 style={{ fontSize: 12, color: 'var(--wellness)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                Mood logged
+                Logged!
               </motion.p>
             )}
           </div>
           <motion.button
-            whileTap={{ scale: 0.9 }}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(123,111,218,0.15)', border: '1px solid rgba(123,111,218,0.3)', padding: '7px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700, color: 'var(--mind)', cursor: 'pointer' }}
+            whileTap={{ scale: 0.88 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(123,111,218,0.15)', border: '1px solid rgba(123,111,218,0.28)', padding: '7px 13px', borderRadius: 18, fontSize: 12, fontWeight: 700, color: 'var(--mind)', cursor: 'pointer' }}
             onClick={() => document.getElementById('lumina-ai-trigger')?.click()}
           >
             ✦ Ask AI
@@ -271,9 +316,9 @@ export default function Home() {
       </div>
 
       {/*  Module cards 2grid  */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <p className="section-label" style={{ margin: 0 }}>YOUR MODULES</p>
-        <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.04em' }}>6 ACTIVE</span>
+        <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.06em' }}>6 ACTIVE</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
         {MODULES.map((mod) => (
