@@ -279,7 +279,7 @@ export default function Login() {
             {googleBusy ? 'Redirecting…' : 'Continue with Google'}
           </motion.button>
 
-          {/* Apple — requires Apple Developer account */}
+          {/* Apple — white button on dark card (Apple HIG for dark backgrounds) */}
           <motion.button
             type="button"
             onClick={handleAppleLogin}
@@ -289,18 +289,19 @@ export default function Login() {
               width: '100%', padding: '13px 18px',
               borderRadius: 12, fontSize: 14, fontWeight: 600,
               fontFamily: 'var(--font)',
-              background: appleBusy ? '#1a1a1a' : '#000',
-              border: '1px solid rgba(255,255,255,0.15)',
-              color: '#fff',
+              background: appleBusy ? 'rgba(255,255,255,0.82)' : 'rgba(255,255,255,0.95)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              color: '#111',
               cursor: appleBusy ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               transition: 'all 0.2s',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.22)',
               opacity: appleBusy ? 0.7 : 1,
             }}
           >
-            {/* Official Apple logo */}
-            <svg width="17" height="17" viewBox="0 0 814 1000" fill="#fff" style={{ flexShrink: 0 }}>
-              <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 336 45 330.8 45 330.8c-18.9-91.1-.5-167.4 39.2-232.7 43.5-72.6 110.2-109.9 179.8-109.9 116.2 0 196.6 80.3 239.2 80.3 41.6 0 134.4-85 270.1-85 43.8 0 175.3 6.9 264.2 118.6zm-162.2-157C555.6 54.5 514.4 24 455.2 24c-49.9 0-99.8 25.4-134.5 62.7-31.2 34.5-56.9 87.7-56.9 143.5 0 7.1 1.3 13.5 2 15.7 3.9.6 10.3 1.3 16.7 1.3 44.3 0 90.8-23.4 122.7-60.1 33.7-38.2 56-92.3 56-147.4 0-5.8-.6-11.5-1-13.5z"/>
+            {/* Apple logo — correct silhouette path */}
+            <svg width="17" height="17" viewBox="0 0 1000 1182" fill="#111" style={{ flexShrink: 0, marginTop: -1 }}>
+              <path d="M702.9 602.6c-1.2-119.7 97.6-177.3 101.9-180.2-55.5-81.2-141.9-92.3-172.7-93.6-73.6-7.5-144.1 43.4-181.5 43.4-37.4 0-95.2-42.3-156.4-41.2-80.5 1.2-155 46.8-196.5 118.3-84 145.6-21.4 361.3 60.4 479.6 40 57.9 87.7 123.1 150.3 120.6 60.4-2.5 83-38.8 155.9-38.8 72.9 0 93.2 38.8 156.9 37.6 65.1-1.2 106.3-59.1 145.9-117.3 46.5-67.3 65.6-132.4 66.9-135.8-1.5-.6-128.3-49.3-129.1-195.6zM581.3 219.4c33.4-40.7 55.9-97 49.9-153.4-48.3 1.9-106.8 32.2-141.3 72.9-31.1 36.1-58.2 93.5-50.9 148.8 53.9 4.2 108.8-27.4 142.3-68.3z"/>
             </svg>
             {appleBusy ? 'Redirecting…' : 'Continue with Apple'}
           </motion.button>

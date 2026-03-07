@@ -5,6 +5,8 @@ import Layout from './components/Layout';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
 import SplashScreen from './components/SplashScreen';
+import { useAuthStore } from './store/authStore';
+import { usePermissions } from './hooks/usePermissions';
 
 // Auth pages — small, loaded eagerly so login is instant
 import Login from './pages/auth/Login';
@@ -32,6 +34,12 @@ function PublicRedirect() {
   return <Navigate to={onboarded ? '/login' : '/onboarding'} replace />;
 }
 
+function PermissionWatcher() {
+  const user = useAuthStore((s) => s.user);
+  usePermissions(!!user);
+  return null;
+}
+
 export default function App() {
   const [splashDone, setSplashDone] = useState(false);
   const handleSplashDone = useCallback(() => setSplashDone(true), []);
@@ -39,6 +47,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <SplashScreen visible={!splashDone} onDone={handleSplashDone} />
+      <PermissionWatcher />
       <BrowserRouter>
         <Suspense fallback={<LoadingSpinner />}>
         <Routes>

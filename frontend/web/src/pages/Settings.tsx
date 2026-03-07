@@ -4,6 +4,12 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/appStore';
 import { THEMES } from '../store/appStore';
+import {
+  requestNotificationPermission,
+  getNotificationPermission,
+  registerPeriodicSync,
+  showLocalNotification,
+} from '../hooks/usePermissions';
 
 const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
 
@@ -59,11 +65,23 @@ export default function Settings() {
         addToast('error', 'Push notifications are not supported on this device');
         return;
       }
-      const perm = await Notification.requestPermission();
+
+      // Already denied by OS — user must go to browser/OS settings
+      if (getNotificationPermission() === 'denied') {
+        addToast('error', 'Notifications blocked — please enable them in your browser/OS settings');
+        setNotifications(false);
+        return;
+      }
+
+      const perm = await requestNotificationPermission();
       if (perm === 'granted') {
         setNotifications(true);
         save('notif', true);
-        new Notification('Lumina Notifications Enabled', { body: 'You will stay updated!' });
+        // Register periodic sync for daily reminders
+        const reg = await navigator.serviceWorker?.ready.catch(() => null);
+        if (reg) await registerPeriodicSync(reg);
+        await showLocalNotification('Lumina ✦', 'Notifications enabled! You\'ll stay on track.');
+        addToast('success', 'Notifications enabled');
       } else {
         setNotifications(false);
         save('notif', false);
@@ -72,6 +90,7 @@ export default function Settings() {
     } else {
       setNotifications(false);
       save('notif', false);
+      addToast('info', 'Notifications disabled');
     }
   }
 
@@ -106,7 +125,16 @@ export default function Settings() {
     {
       title: '🔔 NOTIFICATIONS',
       rows: [
-        { icon: '🔔', label: 'Push Notifications', description: 'Get reminders and updates', value: notifications, onChange: requestPushPermission },
+        {
+          icon: '🔔', label: 'Push Notifications',
+          description: (() => {
+            const p = getNotificationPermission();
+            if (p === 'granted') return 'Active — you\'ll receive reminders ✅';
+            if (p === 'denied')  return 'Blocked in browser/OS settings ❌';
+            return 'Get reminders and habit nudges';
+          })(),
+          value: notifications, onChange: requestPushPermission,
+        },
         { icon: '⏰', label: 'Daily Reminder', description: 'Morning journal prompt at 9 AM', value: dailyReminder, onChange: handleDailyReminder },
       ],
     },
