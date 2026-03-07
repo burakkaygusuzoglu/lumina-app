@@ -60,7 +60,7 @@ export default function AIAssistant() {
   const qc = useQueryClient();
   const addToast = useAppStore((s) => s.addToast);
   const saveNoteMutation = useMutation({
-    mutationFn: (text: string) => api.post('/memories', { content: text, type: 'Idea', tags: ['AI Note'] }).then(r => r.data),
+    mutationFn: (text: string) => api.post('/memories', { content: text, memory_type: 'idea', tags: ['AI Note'] }).then(r => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['memories'] });
       addToast('success', 'Saved to Mind seamlessly!');
@@ -219,7 +219,7 @@ export default function AIAssistant() {
                   {ROUTE_CONTEXT[location.pathname] ?? 'Your personal AI'}
                 </p>
               </div>
-              <button className="btn-icon" onClick={() => setOpen(false)}>✕</button>
+              <button className="btn-icon" onClick={() => { setOpen(false); memoriesLoaded.current = false; }}>✕</button>
             </div>
 
             {/* Messages */}

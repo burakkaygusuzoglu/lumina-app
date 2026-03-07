@@ -7,7 +7,7 @@ import axios, { type InternalAxiosRequestConfig } from 'axios';
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8001',
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15_000,
+  timeout: 30_000,
 });
 
 /* Attach Bearer token to every request */
