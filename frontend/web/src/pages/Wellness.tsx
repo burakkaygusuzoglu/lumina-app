@@ -238,14 +238,14 @@ export default function Wellness() {
                         <div style={{ flex: 1, padding: '8px 12px', borderRadius: 10, background: 'rgba(61,170,134,0.1)', border: '1px solid rgba(61,170,134,0.2)' }}>
                           <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700 }}>BEST DAY</p>
                           <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--wellness)' }}>{bestMood.mood_score}/10</p>
-                          <p style={{ fontSize: 10, color: 'var(--muted)' }}>{new Date(bestMood.created_at).toLocaleDateString('tr', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                          <p style={{ fontSize: 10, color: 'var(--muted)' }}>{new Date(bestMood.created_at).toLocaleDateString('en', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
                         </div>
                       )}
                       {worstMood && worstMood.id !== bestMood?.id && (
                         <div style={{ flex: 1, padding: '8px 12px', borderRadius: 10, background: 'rgba(196,96,122,0.1)', border: '1px solid rgba(196,96,122,0.2)' }}>
                           <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700 }}>HARDEST DAY</p>
                           <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--journal)' }}>{worstMood.mood_score}/10</p>
-                          <p style={{ fontSize: 10, color: 'var(--muted)' }}>{new Date(worstMood.created_at).toLocaleDateString('tr', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                          <p style={{ fontSize: 10, color: 'var(--muted)' }}>{new Date(worstMood.created_at).toLocaleDateString('en', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
                         </div>
                       )}
                     </div>
@@ -379,21 +379,30 @@ export default function Wellness() {
           <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={(e) => e.target === e.currentTarget && setShowAppt(false)}>
             <motion.div className="modal-sheet" initial={{ y: 400 }} animate={{ y: 0 }} exit={{ y: 400 }}
+              drag="y"
+              dragConstraints={{ top: 0 }}
+              dragElastic={{ top: 0.05, bottom: 0.6 }}
+              dragMomentum={false}
+              onDragEnd={(_, info) => { if (info.offset.y > 90 || info.velocity.y > 400) setShowAppt(false); }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}>
               <div className="modal-handle" />
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0 }}>
                 <h3 style={{ fontSize: 18, fontWeight: 700 }}>New Appointment</h3>
-                <button className="btn-icon" onClick={() => setShowAppt(false)}></button>
+                <button className="btn-icon" onClick={() => setShowAppt(false)}>✕</button>
               </div>
-              <input className="field" placeholder="Appointment title*" value={apptTitle} onChange={(e) => setApptTitle(e.target.value)} style={{ marginBottom: 10 }} />
-              <input className="field" placeholder="Doctor name (optional)" value={apptDoctor} onChange={(e) => setApptDoctor(e.target.value)} style={{ marginBottom: 10 }} />
-              <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-                <input type="date" className="field" value={apptDate} onChange={(e) => setApptDate(e.target.value)} style={{ flex: 1 }} />
-                <input type="time" className="field" value={apptTime} onChange={(e) => setApptTime(e.target.value)} style={{ flex: 1 }} />
+              <div className="modal-sheet-body">
+                <input className="field" placeholder="Appointment title*" value={apptTitle} onChange={(e) => setApptTitle(e.target.value)} style={{ marginBottom: 10 }} autoFocus />
+                <input className="field" placeholder="Doctor name (optional)" value={apptDoctor} onChange={(e) => setApptDoctor(e.target.value)} style={{ marginBottom: 10 }} />
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <input type="date" className="field" value={apptDate} onChange={(e) => setApptDate(e.target.value)} style={{ flex: 1 }} />
+                  <input type="time" className="field" value={apptTime} onChange={(e) => setApptTime(e.target.value)} style={{ flex: 1 }} />
+                </div>
               </div>
-              <button className="btn-primary" onClick={() => apptMutation.mutate()} disabled={apptMutation.isPending || !apptTitle || !apptDate || !apptTime}>
-                {apptMutation.isPending ? 'Saving' : 'Save Appointment'}
-              </button>
+              <div className="modal-sheet-footer">
+                <button className="btn-primary" onClick={() => apptMutation.mutate()} disabled={apptMutation.isPending || !apptTitle || !apptDate || !apptTime}>
+                  {apptMutation.isPending ? 'Saving…' : 'Save Appointment'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

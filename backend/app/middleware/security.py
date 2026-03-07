@@ -57,6 +57,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "frame-ancestors 'none'"
             )
 
+        # Cache authenticated GET responses on the client side (private = CDN won't cache)
+        if request.method == "GET" and response.status_code == 200:
+            path = request.url.path
+            if not any(skip in path for skip in ("/health", "/docs", "/redoc", "/openapi")):
+                response.headers.setdefault(
+                    "Cache-Control", "private, max-age=30, stale-while-revalidate=120"
+                )
+
         return response
 
 

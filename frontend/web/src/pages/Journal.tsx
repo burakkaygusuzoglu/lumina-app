@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from 'react';
+﻿import { useState, useMemo, memo } from 'react';
 import AICard from '../components/AICard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,7 +14,7 @@ const CATS  = ['reflection','gratitude','goals','memories','emotions','growth'];
 const MOOD_LABELS = ['Rough','Low','Meh','Okay','Good','Great','Lovely','Amazing'];
 const MOOD_COLORS = ['#c4607a','#c47a60','#6b7280','#60a5fa','#34d399','#e2b96a','#a78bfa','#7b6fda'];
 
-function Skel() {
+const Skel = memo(function Skel() {
   return (
     <div className="card" style={{ opacity: 0.7, display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div className="skeleton" style={{ height: 14, width: '40%' }} />
@@ -22,7 +22,7 @@ function Skel() {
       <div className="skeleton" style={{ height: 12, width: '80%' }} />
     </div>
   );
-}
+});
 
 export default function Journal() {
   const [aiInsight] = useState('AI prompt: Reflect on three things that made you smile today.');
@@ -423,56 +423,65 @@ export default function Journal() {
           <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={(e) => e.target === e.currentTarget && setWriting(false)}>
             <motion.div className="modal-sheet" initial={{ y: 600 }} animate={{ y: 0 }} exit={{ y: 600 }}
+              drag="y"
+              dragConstraints={{ top: 0 }}
+              dragElastic={{ top: 0.05, bottom: 0.6 }}
+              dragMomentum={false}
+              onDragEnd={(_, info) => { if (info.offset.y > 90 || info.velocity.y > 400) setWriting(false); }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}>
               <div className="modal-handle" />
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, flexShrink: 0 }}>
                 <h3 style={{ fontSize: 18, fontWeight: 700 }}>New Entry</h3>
-                <button className="btn-icon" onClick={() => setWriting(false)}></button>
+                <button className="btn-icon" onClick={() => setWriting(false)}>✕</button>
               </div>
-              {!showCard && (
-                <button onClick={() => setShowCard(true)} className="btn-ghost" style={{ fontSize: 12, marginBottom: 10, padding: '6px 10px' }}> Use AI Prompt</button>
-              )}
-              <textarea
-                className="field"
-                placeholder="What's on your mind today?"
-                rows={6}
-                value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
-                style={{ marginBottom: 12 }}
-                autoFocus
-              />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <p style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>MOOD:</p>
-                {MOODS.map((em, i) => (
-                  <button key={i} onClick={() => setNewMood(i + 1)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, opacity: newMood === i + 1 ? 1 : 0.35, transform: newMood === i + 1 ? 'scale(1.3)' : 'scale(1)', transition: 'all 0.15s' }}>
-                    {em}
-                  </button>
-                ))}
-              </div>
-              {/* Tags */}
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
-                {newTags.map((t) => (
-                  <span key={t} className="chip">
-                    #{t}
-                    <button onClick={() => setNewTags(newTags.filter((tg) => tg !== t))} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 11, padding: 0, marginLeft: 2 }}></button>
-                  </span>
-                ))}
-                <input
-                  value={tagInput} onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); } }}
-                  placeholder="Tag + Enter"
-                  style={{ border: 'none', background: 'none', color: 'var(--text)', fontSize: 13, outline: 'none', flex: 1, minWidth: 80 }}
+              <div className="modal-sheet-body">
+                {!showCard && (
+                  <button onClick={() => setShowCard(true)} className="btn-ghost" style={{ fontSize: 12, marginBottom: 10, padding: '6px 10px' }}>✨ Use AI Prompt</button>
+                )}
+                <textarea
+                  className="field"
+                  placeholder="What's on your mind today?"
+                  rows={6}
+                  value={newContent}
+                  onChange={(e) => setNewContent(e.target.value)}
+                  style={{ marginBottom: 12 }}
+                  autoFocus
                 />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <p style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>MOOD:</p>
+                  {MOODS.map((em, i) => (
+                    <button key={i} onClick={() => setNewMood(i + 1)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, opacity: newMood === i + 1 ? 1 : 0.35, transform: newMood === i + 1 ? 'scale(1.3)' : 'scale(1)', transition: 'all 0.15s' }}>
+                      {em}
+                    </button>
+                  ))}
+                </div>
+                {/* Tags */}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {newTags.map((t) => (
+                    <span key={t} className="chip">
+                      #{t}
+                      <button onClick={() => setNewTags(newTags.filter((tg) => tg !== t))} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 11, padding: 0, marginLeft: 2 }}>✕</button>
+                    </span>
+                  ))}
+                  <input
+                    value={tagInput} onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); } }}
+                    placeholder="Tag + Enter"
+                    style={{ border: 'none', background: 'none', color: 'var(--text)', fontSize: 13, outline: 'none', flex: 1, minWidth: 80 }}
+                  />
+                </div>
               </div>
-              <button
-                className="btn-primary"
-                onClick={() => newContent.trim() && createMutation.mutate()}
-                disabled={createMutation.isPending || !newContent.trim()}
-                style={{ background: 'linear-gradient(135deg, var(--journal), #e07a8a)' }}
-              >
-                {createMutation.isPending ? 'Saving' : 'Save Entry'}
-              </button>
+              <div className="modal-sheet-footer">
+                <button
+                  className="btn-primary"
+                  onClick={() => newContent.trim() && createMutation.mutate()}
+                  disabled={createMutation.isPending || !newContent.trim()}
+                  style={{ background: 'linear-gradient(135deg, var(--journal), #e07a8a)' }}
+                >
+                  {createMutation.isPending ? 'Saving…' : 'Save Entry'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -484,25 +493,34 @@ export default function Journal() {
           <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={(e) => e.target === e.currentTarget && setEditEntry(null)}>
             <motion.div className="modal-sheet" initial={{ y: 600 }} animate={{ y: 0 }} exit={{ y: 600 }}
+              drag="y"
+              dragConstraints={{ top: 0 }}
+              dragElastic={{ top: 0.05, bottom: 0.6 }}
+              dragMomentum={false}
+              onDragEnd={(_, info) => { if (info.offset.y > 90 || info.velocity.y > 400) setEditEntry(null); }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}>
               <div className="modal-handle" />
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, flexShrink: 0 }}>
                 <h3 style={{ fontSize: 18, fontWeight: 700 }}>Edit Entry</h3>
-                <button className="btn-icon" onClick={() => setEditEntry(null)}></button>
+                <button className="btn-icon" onClick={() => setEditEntry(null)}>✕</button>
               </div>
-              <textarea className="field" rows={6} value={editEntry.content} onChange={(e) => setEditEntry({ ...editEntry, content: e.target.value })} style={{ marginBottom: 14 }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                {MOODS.map((em, i) => (
-                  <button key={i} onClick={() => setEditEntry({ ...editEntry, mood: i + 1 })}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, opacity: editEntry.mood === i + 1 ? 1 : 0.35, transform: editEntry.mood === i + 1 ? 'scale(1.3)' : 'scale(1)', transition: 'all 0.15s' }}>
-                    {em}
-                  </button>
-                ))}
+              <div className="modal-sheet-body">
+                <textarea className="field" rows={6} value={editEntry.content} onChange={(e) => setEditEntry({ ...editEntry, content: e.target.value })} style={{ marginBottom: 14 }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {MOODS.map((em, i) => (
+                    <button key={i} onClick={() => setEditEntry({ ...editEntry, mood: i + 1 })}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, opacity: editEntry.mood === i + 1 ? 1 : 0.35, transform: editEntry.mood === i + 1 ? 'scale(1.3)' : 'scale(1)', transition: 'all 0.15s' }}>
+                      {em}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <button className="btn-primary" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}
-                style={{ background: 'linear-gradient(135deg, var(--journal), #e07a8a)' }}>
-                {updateMutation.isPending ? 'Updating' : 'Update Entry'}
-              </button>
+              <div className="modal-sheet-footer">
+                <button className="btn-primary" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}
+                  style={{ background: 'linear-gradient(135deg, var(--journal), #e07a8a)' }}>
+                  {updateMutation.isPending ? 'Updating…' : 'Update Entry'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -514,33 +532,42 @@ export default function Journal() {
           <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={(e) => e.target === e.currentTarget && setShowTimeCapsule(false)}>
             <motion.div className="modal-sheet" initial={{ y: 400 }} animate={{ y: 0 }} exit={{ y: 400 }}
+              drag="y"
+              dragConstraints={{ top: 0 }}
+              dragElastic={{ top: 0.05, bottom: 0.6 }}
+              dragMomentum={false}
+              onDragEnd={(_, info) => { if (info.offset.y > 90 || info.velocity.y > 400) setShowTimeCapsule(false); }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}>
               <div className="modal-handle" />
-              <div style={{ textAlign: 'center', marginBottom: 16 }}>
-                <span style={{ fontSize: 40 }}></span>
-                <h3 style={{ fontSize: 18, fontWeight: 700, marginTop: 8 }}>Seal a Time Capsule</h3>
-                <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>Write a letter to your future self</p>
+              <div className="modal-sheet-body">
+                <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                  <span style={{ fontSize: 40 }}>⏳</span>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, marginTop: 8 }}>Seal a Time Capsule</h3>
+                  <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>Write a letter to your future self</p>
+                </div>
+                <textarea className="field" placeholder="Dear future me…" rows={5} value={capsuleContent}
+                  onChange={(e) => setCapsuleContent(e.target.value)} style={{ marginBottom: 12 }} />
+                <div>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>UNLOCK DATE</p>
+                  <input
+                    type="date"
+                    className="field"
+                    value={capsuleDate}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => setCapsuleDate(e.target.value)}
+                  />
+                </div>
               </div>
-              <textarea className="field" placeholder="Dear future me" rows={5} value={capsuleContent}
-                onChange={(e) => setCapsuleContent(e.target.value)} style={{ marginBottom: 12 }} />
-              <div style={{ marginBottom: 16 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>UNLOCK DATE</p>
-                <input
-                  type="date"
-                  className="field"
-                  value={capsuleDate}
-                  min={new Date().toISOString().split('T')[0]}
-                  onChange={(e) => setCapsuleDate(e.target.value)}
-                />
+              <div className="modal-sheet-footer">
+                <button
+                  className="btn-primary"
+                  onClick={() => capsuleContent.trim() && capsuleDate && capsuleMutation.mutate()}
+                  disabled={capsuleMutation.isPending || !capsuleContent.trim() || !capsuleDate}
+                  style={{ background: 'linear-gradient(135deg, #e2b96a, #d4864a)' }}
+                >
+                  {capsuleMutation.isPending ? 'Sealing…' : '⏳ Seal Capsule'}
+                </button>
               </div>
-              <button
-                className="btn-primary"
-                onClick={() => capsuleContent.trim() && capsuleDate && capsuleMutation.mutate()}
-                disabled={capsuleMutation.isPending || !capsuleContent.trim() || !capsuleDate}
-                style={{ background: 'linear-gradient(135deg, #e2b96a, #d4864a)' }}
-              >
-                {capsuleMutation.isPending ? 'Sealing' : ' Seal Capsule'}
-              </button>
             </motion.div>
           </motion.div>
         )}

@@ -162,56 +162,67 @@ function ItemForm({ initial, onClose }: ItemFormProps) {
     <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
       <motion.div className="modal-sheet" initial={{ y: 500 }} animate={{ y: 0 }} exit={{ y: 500 }}
+        drag="y"
+        dragConstraints={{ top: 0 }}
+        dragElastic={{ top: 0.05, bottom: 0.6 }}
+        dragMomentum={false}
+        onDragEnd={(_, info) => { if (info.offset.y > 90 || info.velocity.y > 400) onClose(); }}
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}>
         <div className="modal-handle" />
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14, flexShrink: 0 }}>
           <h3 style={{ fontSize: 18, fontWeight: 700 }}>{initial?.id ? 'Edit Item' : 'New Item'}</h3>
-          <button className="btn-icon" onClick={onClose}></button>
+          <button className="btn-icon" onClick={onClose}>✕</button>
         </div>
 
-        {/* Category */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto', scrollbarWidth: 'none' }}>
-          {CATS.slice(1).map((c) => (
-            <button key={c.key} onClick={() => setCat(c.key as VaultItem['category'])}
-              className={`chip${cat === c.key ? ' active' : ''}`} style={{ flexShrink: 0 }}>
-              {c.icon} {c.label}
-            </button>
-          ))}
-        </div>
-
-        <input className="field" placeholder="Title*" value={title} onChange={(e) => setTitle(e.target.value)} style={{ marginBottom: 10 }} />
-
-        {cat === 'password' && (
-          <>
-            <input className="field" placeholder="Username / Email" value={username} onChange={(e) => setUsername(e.target.value)} style={{ marginBottom: 10 }} />
-            <div style={{ position: 'relative', marginBottom: 10 }}>
-              <input className="field" type={showPass ? 'text' : 'password'} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ paddingRight: 44 }} />
-              <button onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 16 }}>
-                {showPass ? '' : ''}
+        {/* Scrollable form body */}
+        <div className="modal-sheet-body">
+          {/* Category */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto', scrollbarWidth: 'none' }}>
+            {CATS.slice(1).map((c) => (
+              <button key={c.key} onClick={() => setCat(c.key as VaultItem['category'])}
+                className={`chip${cat === c.key ? ' active' : ''}`} style={{ flexShrink: 0 }}>
+                {c.icon} {c.label}
               </button>
-            </div>
-            <input className="field" placeholder="Website URL" value={url} onChange={(e) => setUrl(e.target.value)} style={{ marginBottom: 10 }} />
-          </>
-        )}
+            ))}
+          </div>
 
-        {cat === 'card' && (
-          <>
-            <input className="field" placeholder="Card Number" value={cardNum} onChange={(e) => setCardNum(e.target.value)} style={{ marginBottom: 10 }} />
-            <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-              <input className="field" placeholder="MM/YY" value={expiry} onChange={(e) => setExpiry(e.target.value)} style={{ flex: 1 }} />
-              <input className="field" placeholder="CVV" value={cvv} onChange={(e) => setCvv(e.target.value)} style={{ flex: 1 }} />
-            </div>
-          </>
-        )}
+          <input className="field" placeholder="Title*" value={title} onChange={(e) => setTitle(e.target.value)} style={{ marginBottom: 10 }} />
 
-        {(cat === 'note' || cat === 'document') && (
-          <textarea className="field" placeholder={cat === 'note' ? 'Secure note' : 'Document content'} rows={4} value={content} onChange={(e) => setContent(e.target.value)} style={{ marginBottom: 10 }} />
-        )}
+          {cat === 'password' && (
+            <>
+              <input className="field" placeholder="Username / Email" value={username} onChange={(e) => setUsername(e.target.value)} style={{ marginBottom: 10 }} />
+              <div style={{ position: 'relative', marginBottom: 10 }}>
+                <input className="field" type={showPass ? 'text' : 'password'} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ paddingRight: 44 }} />
+                <button onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 16 }}>
+                  {showPass ? '🙈' : '👁'}
+                </button>
+              </div>
+              <input className="field" placeholder="Website URL" value={url} onChange={(e) => setUrl(e.target.value)} />
+            </>
+          )}
 
-        <button className="btn-primary" onClick={() => title.trim() && mutation.mutate()} disabled={mutation.isPending || !title.trim()}
-          style={{ background: 'linear-gradient(135deg, var(--vault), #e8a06a)' }}>
-          {mutation.isPending ? 'Saving' : 'Save to Vault'}
-        </button>
+          {cat === 'card' && (
+            <>
+              <input className="field" placeholder="Card Number" value={cardNum} onChange={(e) => setCardNum(e.target.value)} style={{ marginBottom: 10 }} />
+              <div style={{ display: 'flex', gap: 10 }}>
+                <input className="field" placeholder="MM/YY" value={expiry} onChange={(e) => setExpiry(e.target.value)} style={{ flex: 1 }} />
+                <input className="field" placeholder="CVV" value={cvv} onChange={(e) => setCvv(e.target.value)} style={{ flex: 1 }} />
+              </div>
+            </>
+          )}
+
+          {(cat === 'note' || cat === 'document') && (
+            <textarea className="field" placeholder={cat === 'note' ? 'Secure note' : 'Document content'} rows={4} value={content} onChange={(e) => setContent(e.target.value)} />
+          )}
+        </div>
+
+        {/* Sticky submit */}
+        <div className="modal-sheet-footer">
+          <button className="btn-primary" onClick={() => title.trim() && mutation.mutate()} disabled={mutation.isPending || !title.trim()}
+            style={{ background: 'linear-gradient(135deg, var(--vault), #e8a06a)' }}>
+            {mutation.isPending ? 'Saving…' : '🔐 Save to Vault'}
+          </button>
+        </div>
       </motion.div>
     </motion.div>
   );

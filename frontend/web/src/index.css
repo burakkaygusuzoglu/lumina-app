@@ -328,20 +328,35 @@ textarea.field { resize: vertical; }
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
-  padding: 20px 20px;
-  padding-bottom: max(env(safe-area-inset-bottom, 0px) + 48px, 64px);
+  padding: 20px 20px 0;
   width: 100%;
   max-width: 430px;
   /* Shrink when keyboard opens so the submit button stays reachable */
   max-height: calc(92dvh - var(--keyboard-h, 0px));
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  /* Flex column: scrollable body + sticky footer */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   overscroll-behavior: contain;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
-  scrollbar-width: none;
   /* Prevent drag handle mis-firing on scroll */
   touch-action: pan-y;
+}
+/* Scrollable middle section inside modal-sheet */
+.modal-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding-bottom: 8px;
+}
+.modal-sheet-body::-webkit-scrollbar { display: none; }
+/* Sticky footer with safe-area-aware bottom padding */
+.modal-sheet-footer {
+  flex-shrink: 0;
+  padding: 12px 0 max(env(safe-area-inset-bottom, 0px) + 16px, 28px);
 }
 .modal-sheet::-webkit-scrollbar { display: none; }
 

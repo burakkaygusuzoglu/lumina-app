@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useRef, useMemo } from 'react';
+﻿import { useState, useCallback, useRef, useMemo, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
@@ -25,7 +25,7 @@ const TYPE_BG: Record<string, string> = { note: 'rgba(74,143,212,0.10)', idea: '
 
 const MOOD_EMOJIS = ['', '', '', '', '', '', '', '', '', ''];
 
-function Skel() {
+const Skel = memo(function Skel() {
   return (
     <div className="card" style={{ opacity: 0.7, display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div className="skeleton" style={{ height: 16, width: '60%' }} />
@@ -37,7 +37,7 @@ function Skel() {
       </div>
     </div>
   );
-}
+});
 
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
@@ -119,72 +119,78 @@ function MemoryForm({ initial, onClose }: NewMemorySheetProps) {
         <div className="modal-handle" />
         <div className="flex justify-between items-center mb-16">
           <h3 style={{ fontSize: 18, fontWeight: 700 }}>{initial?.id ? 'Edit Memory' : 'New Memory'}</h3>
-          <button className="btn-icon" onClick={onClose}></button>
+          <button className="btn-icon" onClick={onClose}>✕</button>
         </div>
 
-        {/* Type selector */}
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8, marginBottom: 14, scrollbarWidth: 'none' }}>
-          {TYPES.slice(1).map((t) => (
-            <button key={t.key} onClick={() => setMemType(t.key)}
-              className={`chip${memType === t.key ? ' active' : ''}`} style={{ flexShrink: 0 }}>
-              {t.icon} {t.label}
-            </button>
-          ))}
-        </div>
-
-        <input className="field" placeholder="Title (optional)" value={title} onChange={(e) => setTitle(e.target.value)} style={{ marginBottom: 10 }} />
-        <textarea className="field" placeholder="What do you want to remember?*" rows={4} value={content} onChange={(e) => setContent(e.target.value)} style={{ marginBottom: 14 }} />
-
-        {/* Tags */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          {tags.map((tag) => (
-            <span key={tag} className="chip" style={{ gap: 4 }}>
-              #{tag}
-              <button onClick={() => setTags(tags.filter((t) => t !== tag))} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 11, padding: 0 }}></button>
-            </span>
-          ))}
-          <input
-            value={tagInput} onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); } }}
-            placeholder="Add tag + Enter"
-            style={{ border: 'none', background: 'none', color: 'var(--text)', fontSize: 13, outline: 'none', flex: 1, minWidth: 80 }}
-          />
-        </div>
-
-        {/* Mood score */}
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)' }}>MOOD {moodScore}/10</p>
-            <span style={{ fontSize: 20 }}>{MOOD_EMOJIS[moodScore] ?? ''}</span>
+        {/* Scrollable form body */}
+        <div className="modal-sheet-body">
+          {/* Type selector */}
+          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8, marginBottom: 14, scrollbarWidth: 'none' }}>
+            {TYPES.slice(1).map((t) => (
+              <button key={t.key} onClick={() => setMemType(t.key)}
+                className={`chip${memType === t.key ? ' active' : ''}`} style={{ flexShrink: 0 }}>
+                {t.icon} {t.label}
+              </button>
+            ))}
           </div>
-          <input type="range" min={1} max={10} value={moodScore} onChange={(e) => setMoodScore(Number(e.target.value))} style={{ accentColor: 'var(--mind)' }} />
+
+          <input className="field" placeholder="Title (optional)" value={title} onChange={(e) => setTitle(e.target.value)} style={{ marginBottom: 10 }} />
+          <textarea className="field" placeholder="What do you want to remember?*" rows={4} value={content} onChange={(e) => setContent(e.target.value)} style={{ marginBottom: 14 }} />
+
+          {/* Tags */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            {tags.map((tag) => (
+              <span key={tag} className="chip" style={{ gap: 4 }}>
+                #{tag}
+                <button onClick={() => setTags(tags.filter((t) => t !== tag))} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 11, padding: 0 }}>✕</button>
+              </span>
+            ))}
+            <input
+              value={tagInput} onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); } }}
+              placeholder="Add tag + Enter"
+              style={{ border: 'none', background: 'none', color: 'var(--text)', fontSize: 13, outline: 'none', flex: 1, minWidth: 80 }}
+            />
+          </div>
+
+          {/* Mood score */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)' }}>MOOD {moodScore}/10</p>
+              <span style={{ fontSize: 20 }}>{MOOD_EMOJIS[moodScore] ?? ''}</span>
+            </div>
+            <input type="range" min={1} max={10} value={moodScore} onChange={(e) => setMoodScore(Number(e.target.value))} style={{ accentColor: 'var(--mind)' }} />
+          </div>
+
+          {/* Importance */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)' }}>IMPORTANCE</p>
+            <StarRating value={importance} onChange={setImportance} />
+          </div>
+
+          {/* Photo */}
+          <div style={{ marginBottom: 4 }}>
+            <ImageUpload
+              value={photoPreview}
+              height={100}
+              label="Attach Photo"
+              onChange={(_file, dataUrl) => { setPhotoFile(_file); setPhotoPreview(dataUrl); }}
+              onRemove={() => { setPhotoPreview(''); setPhotoFile(null); setPhotoUrl(''); }}
+            />
+          </div>
         </div>
 
-        {/* Importance */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)' }}>IMPORTANCE</p>
-          <StarRating value={importance} onChange={setImportance} />
+        {/* Sticky submit */}
+        <div className="modal-sheet-footer">
+          <button
+            className="btn-primary"
+            onClick={() => { if (content.trim()) mutation.mutate(); }}
+            disabled={mutation.isPending || !content.trim()}
+            style={{ background: 'linear-gradient(135deg, var(--mind), #9b8de8)' }}
+          >
+            {mutation.isPending ? 'Saving…' : initial?.id ? 'Update Memory' : 'Save Memory'}
+          </button>
         </div>
-
-        {/* Photo */}
-        <div style={{ marginBottom: 16 }}>
-          <ImageUpload
-            value={photoPreview}
-            height={100}
-            label="Attach Photo"
-            onChange={(_file, dataUrl) => { setPhotoFile(_file); setPhotoPreview(dataUrl); }}
-            onRemove={() => { setPhotoPreview(''); setPhotoFile(null); setPhotoUrl(''); }}
-          />
-        </div>
-
-        <button
-          className="btn-primary"
-          onClick={() => { if (content.trim()) mutation.mutate(); }}
-          disabled={mutation.isPending || !content.trim()}
-          style={{ background: 'linear-gradient(135deg, var(--mind), #9b8de8)' }}
-        >
-          {mutation.isPending ? 'Saving' : initial?.id ? 'Update Memory' : 'Save Memory'}
-        </button>
       </motion.div>
     </motion.div>
   );

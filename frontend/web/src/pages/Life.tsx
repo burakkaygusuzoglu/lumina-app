@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect, useRef } from 'react';
+﻿import { useState, useMemo, useEffect, useRef, memo } from 'react';
 import AICard from '../components/AICard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -28,7 +28,7 @@ const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
   low:     { label: 'Low',     color: '#3daa86' },
 };
 
-function Skel() {
+const Skel = memo(function Skel() {
   return (
     <div className="card" style={{ opacity: 0.7, display: 'flex', gap: 12, alignItems: 'center' }}>
       <div className="skeleton" style={{ width: 24, height: 24, borderRadius: 12 }} />
@@ -38,7 +38,7 @@ function Skel() {
       </div>
     </div>
   );
-}
+});
 
 export default function Life() {
   const [aiInsight] = useState('AI highlights: Breaking down your upcoming priorities can reduce stress.');
@@ -278,7 +278,7 @@ export default function Life() {
                       transition: 'background 0.3s ease, border-color 0.3s ease'
                     }}>
                     {task.status === 'done' && (
-                      <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} style={{ color: '#fff', fontSize: 13, fontWeight: 'bold' }}>?</motion.span>
+                      <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} style={{ color: '#fff', fontSize: 13, fontWeight: 'bold' }}>✓</motion.span>
                     )}
                   </motion.button>
 
@@ -333,45 +333,51 @@ export default function Life() {
                 <h3 style={{ fontSize: 18, fontWeight: 700 }}>New Task</h3>
                 <button className="btn-icon" onClick={() => setShowForm(false)}></button>
               </div>
-              <input className="field" placeholder="Task title*" value={title} onChange={(e) => setTitle(e.target.value)} style={{ marginBottom: 10 }} autoFocus />
-              <textarea className="field" placeholder="Description (optional)" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} style={{ marginBottom: 10 }} />
+              {/* Scrollable form body */}
+              <div className="modal-sheet-body">
+                <input className="field" placeholder="Task title*" value={title} onChange={(e) => setTitle(e.target.value)} style={{ marginBottom: 10 }} autoFocus />
+                <textarea className="field" placeholder="Description (optional)" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} style={{ marginBottom: 10 }} />
 
-              {/* Priority */}
-              <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-                {Object.entries(PRIORITY_MAP).map(([key, val]) => (
-                  <button key={key} onClick={() => setPriority(key as Task['priority'])}
-                    style={{
-                      flex: 1, padding: '8px 4px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                      background: priority === key ? `${val.color}22` : 'transparent',
-                      border: `1px solid ${priority === key ? val.color : 'var(--border)'}`,
-                      color: priority === key ? val.color : 'var(--muted)',
-                    }}>
-                    {val.label}
-                  </button>
-                ))}
+                {/* Priority */}
+                <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                  {Object.entries(PRIORITY_MAP).map(([key, val]) => (
+                    <button key={key} onClick={() => setPriority(key as Task['priority'])}
+                      style={{
+                        flex: 1, padding: '8px 4px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                        background: priority === key ? `${val.color}22` : 'transparent',
+                        border: `1px solid ${priority === key ? val.color : 'var(--border)'}`,
+                        color: priority === key ? val.color : 'var(--muted)',
+                      }}>
+                      {val.label}
+                    </button>
+                  ))}
+                </div>
+
+                <input type="date" className="field" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={{ marginBottom: 10 }} />
+
+                {/* Tags */}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {tags.map((t) => (
+                    <span key={t} className="chip">#{t}
+                      <button onClick={() => setTags(tags.filter((tg) => tg !== t))} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 11, padding: 0, marginLeft: 2 }}></button>
+                    </span>
+                  ))}
+                  <input value={tagInput} onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); } }}
+                    placeholder="Tag + Enter"
+                    style={{ border: 'none', background: 'none', color: 'var(--text)', fontSize: 13, outline: 'none', flex: 1, minWidth: 80 }}
+                  />
+                </div>
               </div>
 
-              <input type="date" className="field" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={{ marginBottom: 10 }} />
-
-              {/* Tags */}
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
-                {tags.map((t) => (
-                  <span key={t} className="chip">#{t}
-                    <button onClick={() => setTags(tags.filter((tg) => tg !== t))} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 11, padding: 0, marginLeft: 2 }}></button>
-                  </span>
-                ))}
-                <input value={tagInput} onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); } }}
-                  placeholder="Tag + Enter"
-                  style={{ border: 'none', background: 'none', color: 'var(--text)', fontSize: 13, outline: 'none', flex: 1, minWidth: 80 }}
-                />
+              {/* Sticky submit */}
+              <div className="modal-sheet-footer">
+                <button className="btn-primary" onClick={() => title.trim() && createMutation.mutate()}
+                  disabled={createMutation.isPending || !title.trim()}
+                  style={{ background: 'linear-gradient(135deg, var(--life), #60a4d4)' }}>
+                  {createMutation.isPending ? 'Adding…' : 'Add Task'}
+                </button>
               </div>
-
-              <button className="btn-primary" onClick={() => title.trim() && createMutation.mutate()}
-                disabled={createMutation.isPending || !title.trim()}
-                style={{ background: 'linear-gradient(135deg, var(--life), #60a4d4)' }}>
-                {createMutation.isPending ? 'Adding' : 'Add Task'}
-              </button>
             </motion.div>
           </motion.div>
         )}
@@ -397,24 +403,31 @@ export default function Life() {
                 <h3 style={{ fontSize: 18, fontWeight: 700 }}>Edit Task</h3>
                 <button className="btn-icon" onClick={() => setEditTask(null)}></button>
               </div>
-              <input className="field" value={editTask.title} onChange={(e) => setEditTask({ ...editTask, title: e.target.value })} style={{ marginBottom: 10 }} />
-              <textarea className="field" rows={2} value={editTask.description ?? ''} onChange={(e) => setEditTask({ ...editTask, description: e.target.value })} style={{ marginBottom: 10 }} />
-              <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-                {Object.entries(PRIORITY_MAP).map(([key, val]) => (
-                  <button key={key} onClick={() => setEditTask({ ...editTask, priority: key as Task['priority'] })}
-                    style={{ flex: 1, padding: '8px 4px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                      background: editTask.priority === key ? `${val.color}22` : 'transparent',
-                      border: `1px solid ${editTask.priority === key ? val.color : 'var(--border)'}`,
-                      color: editTask.priority === key ? val.color : 'var(--muted)' }}>
-                    {val.label}
-                  </button>
-                ))}
+              {/* Scrollable form body */}
+              <div className="modal-sheet-body">
+                <input className="field" value={editTask.title} onChange={(e) => setEditTask({ ...editTask, title: e.target.value })} style={{ marginBottom: 10 }} />
+                <textarea className="field" rows={2} value={editTask.description ?? ''} onChange={(e) => setEditTask({ ...editTask, description: e.target.value })} style={{ marginBottom: 10 }} />
+                <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                  {Object.entries(PRIORITY_MAP).map(([key, val]) => (
+                    <button key={key} onClick={() => setEditTask({ ...editTask, priority: key as Task['priority'] })}
+                      style={{ flex: 1, padding: '8px 4px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                        background: editTask.priority === key ? `${val.color}22` : 'transparent',
+                        border: `1px solid ${editTask.priority === key ? val.color : 'var(--border)'}`,
+                        color: editTask.priority === key ? val.color : 'var(--muted)' }}>
+                      {val.label}
+                    </button>
+                  ))}
+                </div>
+                <input type="date" className="field" value={editTask.due_date ?? ''} onChange={(e) => setEditTask({ ...editTask, due_date: e.target.value })} />
               </div>
-              <input type="date" className="field" value={editTask.due_date ?? ''} onChange={(e) => setEditTask({ ...editTask, due_date: e.target.value })} style={{ marginBottom: 14 }} />
-              <button className="btn-primary" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}
-                style={{ background: 'linear-gradient(135deg, var(--life), #60a4d4)' }}>
-                {updateMutation.isPending ? 'Updating' : 'Update Task'}
-              </button>
+
+              {/* Sticky submit */}
+              <div className="modal-sheet-footer">
+                <button className="btn-primary" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}
+                  style={{ background: 'linear-gradient(135deg, var(--life), #60a4d4)' }}>
+                  {updateMutation.isPending ? 'Updating…' : 'Update Task'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
