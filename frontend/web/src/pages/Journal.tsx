@@ -53,12 +53,12 @@ export default function Journal() {
 
   const { data: entries = [], isLoading } = useQuery<JournalEntry[]>({
     queryKey: ['journal'],
-    queryFn:  () => api.get('/journal').then((r) => r.data),
+    queryFn:  () => api.get('/journal/entries').then((r) => r.data),
     staleTime: 30_000,
   });
 
   const createMutation = useMutation({
-    mutationFn: () => api.post('/journal', { content: newContent, mood: newMood, tags: newTags }).then((r) => r.data),
+    mutationFn: () => api.post('/journal/entry', { content: newContent, mood: newMood, tags: newTags }).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['journal'] });
       addToast('success', 'Entry saved ');
@@ -68,13 +68,13 @@ export default function Journal() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: () => api.put(`/journal/${editEntry!.id}`, { content: editEntry!.content, mood: editEntry!.mood, tags: editEntry!.tags }).then((r) => r.data),
+    mutationFn: () => api.put(`/memories/${editEntry!.id}`, { content: editEntry!.content, mood: editEntry!.mood, tags: editEntry!.tags }).then((r) => r.data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['journal'] }); addToast('success', 'Updated '); setEditEntry(null); },
     onError: () => addToast('error', 'Failed to update'),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/journal/${id}`),
+    mutationFn: (id: string) => api.delete(`/memories/${id}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['journal'] }); addToast('success', 'Entry deleted'); setDeleteId(null); },
     onError: () => addToast('error', 'Failed to delete'),
   });

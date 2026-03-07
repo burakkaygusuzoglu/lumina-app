@@ -32,6 +32,10 @@ class MemoryType(str, Enum):
     JOURNAL = "journal"
     WELLNESS = "wellness"
     TASK = "task"
+    EXPERIENCE = "experience"
+    DREAM = "dream"
+    GOAL = "goal"
+    GRATITUDE = "gratitude"
 
 
 class MemoryCreate(BaseModel):

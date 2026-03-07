@@ -22,7 +22,7 @@ const triggerHaptic = (type: 'light' | 'medium' | 'heavy' | 'success' = 'light')
 };
 
 const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
-
+  critical: { label: 'Critical', color: '#c4607a' },
   urgent:  { label: 'Urgent',  color: '#c4607a' },
   high:    { label: 'High',    color: '#d4864a' },
   medium:  { label: 'Medium',  color: '#e2b96a' },
@@ -104,7 +104,7 @@ export default function Life() {
 
   async function getAiFocusTip() {
     setLoadingTip(true);
-    const pendingTitles = tasks.filter((t) => t.status === 'pending').slice(0, 5).map((t) => t.title).join(', ');
+    const pendingTitles = tasks.filter((t) => t.status !== 'done' && t.status !== 'cancelled').slice(0, 5).map((t) => t.title).join(', ');
     try {
       const { data } = await api.post('/ai/chat', {
         message: `I have these pending tasks: ${pendingTitles || 'no tasks yet'}. Give me a brief focus tip and suggest which to prioritize first (2-3 sentences max).`,
@@ -121,14 +121,14 @@ export default function Life() {
 
   const filtered = useMemo(() => {
     return tasks.filter((t) => {
-      if (tab === 'today')    return t.status === 'pending' && (!t.due_date || t.due_date <= today);
-      if (tab === 'upcoming') return t.status === 'pending' && t.due_date && t.due_date > today;
+      if (tab === 'today')    return (t.status === 'todo' || t.status === 'in_progress') && (!t.due_date || t.due_date <= today);
+      if (tab === 'upcoming') return (t.status === 'todo' || t.status === 'in_progress') && t.due_date && t.due_date > today;
       return true;
     });
   }, [tasks, tab, today]);
 
-  const pendingCount   = tasks.filter((t) => t.status === 'pending').length;
-  const completedCount = tasks.filter((t) => t.status === 'completed').length;
+  const pendingCount   = tasks.filter((t) => t.status !== 'done' && t.status !== 'cancelled').length;
+  const completedCount = tasks.filter((t) => t.status === 'done').length;
 
   return (
     <motion.div {...PAGE} className="page">
@@ -146,7 +146,7 @@ export default function Life() {
       {/* Stats row */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {Object.entries(PRIORITY_MAP).map(([key, val]) => {
-          const count = tasks.filter((t) => t.priority === key && t.status === 'pending').length;
+          const count = tasks.filter((t) => t.priority === key && t.status !== 'done' && t.status !== 'cancelled').length;
           return (
             <div key={key} className="card" style={{ flex: 1, padding: '10px 6px', textAlign: 'center', borderTop: `2px solid ${val.color}` }}>
               <p style={{ fontSize: 20, fontWeight: 800, color: val.color }}>{count}</p>
@@ -201,30 +201,30 @@ export default function Life() {
             {filtered.map((task, i) => (
               <motion.div key={task.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20, height: 0 }} transition={{ delay: i * 0.03 }}
-                className="card glass glow-hover" style={{ opacity: task.status === 'completed' ? 0.5 : 1, padding: '16px', borderLeft: `3px solid ${PRIORITY_MAP[task.priority ?? 'medium']?.color ?? 'var(--border)'}` }}>
+                className="card glass glow-hover" style={{ opacity: task.status === 'done' ? 0.5 : 1, padding: '16px', borderLeft: `3px solid ${PRIORITY_MAP[task.priority ?? 'medium']?.color ?? 'var(--border)'}` }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                   {/* Checkbox */}
                   <motion.button
                     whileTap={{ scale: 0.8 }}
                     onClick={() => {
-                      if (task.status === 'pending') {
+                      if (task.status === 'todo' || task.status === 'in_progress') {
                         triggerHaptic('light'); // pre-emptive feel
                         completeMutation.mutate(task.id);
                       }
                     }}
                     style={{
                       width: 24, height: 24, borderRadius: 12, border: `2px solid ${PRIORITY_MAP[task.priority ?? 'medium']?.color ?? 'var(--muted)'}`,
-                      background: task.status === 'completed' ? PRIORITY_MAP[task.priority ?? 'medium']?.color : 'transparent',
+                      background: task.status === 'done' ? PRIORITY_MAP[task.priority ?? 'medium']?.color : 'transparent',
                       cursor: 'pointer', flexShrink: 0, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       transition: 'background 0.3s ease, border-color 0.3s ease'
                     }}>
-                    {task.status === 'completed' && (
+                    {task.status === 'done' && (
                       <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} style={{ color: '#fff', fontSize: 13, fontWeight: 'bold' }}>?</motion.span>
                     )}
                   </motion.button>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 600, fontSize: 14, textDecoration: task.status === 'completed' ? 'line-through' : 'none', color: task.status === 'completed' ? 'var(--muted)' : 'var(--text)' }}>
+                    <p style={{ fontWeight: 600, fontSize: 14, textDecoration: task.status === 'done' ? 'line-through' : 'none', color: task.status === 'done' ? 'var(--muted)' : 'var(--text)' }}>
                       {task.title}
                     </p>
                     {task.description && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{task.description}</p>}

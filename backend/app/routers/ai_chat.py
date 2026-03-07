@@ -321,7 +321,7 @@ async def get_daily_greeting(
         filters={"user_id": current_user.user_id},
         order_by="created_at desc", limit=20,
     )
-    tasks_today = [t for t in tasks if not t.get("is_completed")][:5]
+    tasks_today = [t for t in tasks if t.get("status") not in ("done", "cancelled")][:5]
 
     journals = await db_select(
         supabase_admin, "journal_entries",

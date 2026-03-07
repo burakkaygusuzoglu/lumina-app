@@ -76,7 +76,7 @@ export default function Home() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
   });
 
-  const todayTasks  = tasks.filter((t) => !t.is_completed).slice(0, 4);
+  const todayTasks  = tasks.filter((t) => t.status !== 'done' && t.status !== 'cancelled').slice(0, 4);
   const last7Moods  = [...moods].slice(0, 7).reverse();
   const recentMems  = memories.slice(0, 6);
 
@@ -267,7 +267,7 @@ export default function Home() {
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '14px 16px',
                   borderBottom: i < todayTasks.length - 1 ? '1px solid var(--border)' : 'none',
-                  borderLeft: `3px solid ${task.priority === 'urgent' ? 'var(--journal)' : task.priority === 'high' ? 'var(--vault)' : task.priority === 'medium' ? 'var(--gold)' : 'var(--wellness)'}`,
+                  borderLeft: `3px solid ${(task.priority === 'urgent' || task.priority === 'critical') ? 'var(--journal)' : task.priority === 'high' ? 'var(--vault)' : task.priority === 'medium' ? 'var(--gold)' : 'var(--wellness)'}`,
                 }}
               >
                 <motion.button
@@ -275,13 +275,13 @@ export default function Home() {
                   onClick={() => taskCompleteMutation.mutate(task.id)}
                   style={{
                     width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                    border: `2px solid ${task.priority === 'urgent' ? 'var(--journal)' : task.priority === 'high' ? 'var(--vault)' : 'var(--border2)'}`,
+                    border: `2px solid ${(task.priority === 'urgent' || task.priority === 'critical') ? 'var(--journal)' : task.priority === 'high' ? 'var(--vault)' : 'var(--border2)'}`,
                     background: 'none', cursor: 'pointer',
                     transition: 'background 0.2s',
                   }}
                 />
                 <span style={{ fontSize: 14, color: 'var(--text)', flex: 1 }}>{task.title}</span>
-                {task.priority === 'urgent' && <span style={{ fontSize: 10, color: 'var(--journal)', fontWeight: 800, padding: '2px 7px', borderRadius: 10, background: 'rgba(196,96,122,0.12)' }}>URGENT</span>}
+                {(task.priority === 'urgent' || task.priority === 'critical') && <span style={{ fontSize: 10, color: 'var(--journal)', fontWeight: 800, padding: '2px 7px', borderRadius: 10, background: 'rgba(196,96,122,0.12)' }}>{task.priority === 'critical' ? 'CRITICAL' : 'URGENT'}</span>}
                 {task.priority === 'high'   && <span style={{ fontSize: 10, color: 'var(--vault)',   fontWeight: 800, padding: '2px 7px', borderRadius: 10, background: 'rgba(212,134,74,0.12)'  }}>HIGH</span>}
               </motion.div>
             ))}

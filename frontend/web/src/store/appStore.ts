@@ -14,6 +14,7 @@ export interface Memory {
   mood_score?: number;
   importance?: number;
   photo_url?: string;
+  metadata?: Record<string, any>;
   created_at: string;
   updated_at?: string;
 }
@@ -23,8 +24,8 @@ export interface Task {
   title: string;
   description?: string;
   is_completed: boolean;
-  status?: 'pending' | 'completed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status?: 'todo' | 'in_progress' | 'done' | 'cancelled';
+  priority: 'low' | 'medium' | 'high' | 'urgent' | 'critical';
   due_date?: string;
   tags?: string[];
   created_at: string;

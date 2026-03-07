@@ -59,13 +59,13 @@ function MemoryForm({ initial, onClose }: NewMemorySheetProps) {
   const [title,      setTitle]      = useState(initial?.title ?? '');
   const [content,    setContent]    = useState(initial?.content ?? '');
   const [memType,    setMemType]    = useState(initial?.memory_type ?? 'note');
-  const [moodScore,  setMoodScore]  = useState(initial?.mood_score ?? 7);
-  const [importance, setImportance] = useState(initial?.importance ?? 3);
+  const [moodScore,  setMoodScore]  = useState<number>(initial?.metadata?.mood_score ?? 7);
+  const [importance, setImportance] = useState<number>(initial?.metadata?.importance ?? 3);
   const [tagInput,   setTagInput]   = useState('');
   const [tags,       setTags]       = useState<string[]>(initial?.tags ?? []);
-  const [photoUrl,   setPhotoUrl]   = useState(initial?.photo_url ?? '');
+  const [photoUrl,   setPhotoUrl]   = useState<string>(initial?.metadata?.photo_url ?? '');
   const [photoFile,  setPhotoFile]  = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState(initial?.photo_url ?? '');
+  const [photoPreview, setPhotoPreview] = useState<string>(initial?.metadata?.photo_url ?? '');
 
   function addTag() {
     const t = tagInput.trim().toLowerCase();
@@ -84,10 +84,12 @@ function MemoryForm({ initial, onClose }: NewMemorySheetProps) {
         title: title || undefined,
         content,
         memory_type: memType,
-        mood_score: moodScore,
-        importance,
         tags,
-        photo_url: finalPhotoUrl || undefined,
+        metadata: {
+          mood_score: moodScore,
+          importance,
+          ...(finalPhotoUrl ? { photo_url: finalPhotoUrl } : {}),
+        },
       };
       if (initial?.id) {
         return api.put(`/memories/${initial.id}`, payload).then((r) => r.data);
