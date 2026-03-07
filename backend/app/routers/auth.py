@@ -244,6 +244,40 @@ async def refresh_token(payload: RefreshRequest) -> Token:
     )
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+@router.post(
+    "/forgot-password",
+    status_code=status.HTTP_200_OK,
+    summary="Send a password-reset email",
+)
+@_limiter.limit("3/minute")
+async def forgot_password(request: Request, payload: ForgotPasswordRequest) -> dict:
+    """Send a Supabase password-reset email.
+
+    Always returns 200 regardless of whether the email exists, to prevent
+    user enumeration attacks.
+
+    Args:
+        payload: ``ForgotPasswordRequest`` with the user's email address.
+
+    Returns:
+        Generic success message.
+    """
+    try:
+        supabase_client.auth.reset_password_for_email(
+            payload.email,
+            {"redirect_to": "https://lumina-app-pink.vercel.app/reset-password"},
+        )
+    except Exception as exc:
+        # Log internally but never reveal whether the email exists
+        logger.warning("Password reset request error for %s: %s", payload.email, exc)
+
+    return {"message": "If that email is registered, a reset link has been sent."}
+
+
 class ProfileUpdate(BaseModel):
     full_name: str | None = None
     avatar_url: str | None = None

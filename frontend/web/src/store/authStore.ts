@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { api } from '../lib/api';
 
@@ -16,6 +16,8 @@ interface AuthState {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => void;
   clearError: () => void;
   setUser: (user: AuthUser) => void;
@@ -32,15 +34,9 @@ export const useAuthStore = create<AuthState>()(
       login: async (email, password) => {
         set({ isLoading: true, error: null });
         try {
-          const { data } = await api.post('/auth/login', {
-            email,
-            password,
-          });
-
+          const { data } = await api.post('/auth/login', { email, password });
           const token: string = data.access_token;
           localStorage.setItem('lumina_token', token);
-
-          // The login response already embeds the full user profile
           set({ user: data.user, token, isLoading: false });
         } catch (err: unknown) {
           const msg = (err as { response?: { data?: { detail?: string } } })
@@ -53,11 +49,7 @@ export const useAuthStore = create<AuthState>()(
       register: async (email, password, fullName) => {
         set({ isLoading: true, error: null });
         try {
-          await api.post('/auth/register', {
-            email,
-            password,
-            full_name: fullName,
-          });
+          await api.post('/auth/register', { email, password, full_name: fullName });
           const store = useAuthStore.getState();
           await store.login(email, password);
         } catch (err: unknown) {
@@ -66,6 +58,33 @@ export const useAuthStore = create<AuthState>()(
           set({ error: msg, isLoading: false });
           throw err;
         }
+      },
+
+      forgotPassword: async (email) => {
+        set({ isLoading: true, error: null });
+        try {
+          await api.post('/auth/forgot-password', { email });
+        } catch {
+          // silently ignore - endpoint always returns 200
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      loginWithGoogle: async () => {
+        const supabaseUrl = (import.meta as { env: Record<string, string> }).env.VITE_SUPABASE_URL;
+        const supabaseKey = (import.meta as { env: Record<string, string> }).env.VITE_SUPABASE_ANON_KEY;
+        if (!supabaseUrl || !supabaseKey) {
+          set({ error: 'Google sign-in is not configured yet.' });
+          return;
+        }
+        const { createClient } = await import('@supabase/supabase-js');
+        const sb = createClient(supabaseUrl, supabaseKey);
+        const { error } = await sb.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: `${window.location.origin}/oauth/callback` },
+        });
+        if (error) set({ error: error.message });
       },
 
       logout: () => {

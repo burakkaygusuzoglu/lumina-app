@@ -1,20 +1,23 @@
 /**
  * Login page — Apple-quality auth screen with aurora background,
- * premium form card, and social sign-in stubs.
+ * premium form card, forgot password modal, and Google sign-in.
  */
 import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
 import FloatingInput from '../../components/FloatingInput';
+import ForgotPasswordModal from '../../components/ForgotPasswordModal';
 
 export default function Login() {
   const navigate   = useNavigate();
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const { login, loginWithGoogle, isLoading, error, clearError } = useAuthStore();
 
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [showPw,   setShowPw]   = useState(false);
+  const [email,      setEmail]      = useState('');
+  const [password,   setPassword]   = useState('');
+  const [showPw,     setShowPw]     = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -27,7 +30,17 @@ export default function Login() {
     }
   }
 
+  async function handleGoogleLogin() {
+    setGoogleBusy(true);
+    try {
+      await loginWithGoogle();
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
   return (
+    <>
     <div
       style={{
         minHeight: '100dvh',
@@ -159,7 +172,11 @@ export default function Login() {
 
           {/* Forgot password */}
           <div style={{ textAlign: 'right', marginTop: -5 }}>
-            <span style={{ fontSize: 12, color: 'var(--mind)', fontWeight: 600, cursor: 'pointer' }}>
+            <span
+              role="button"
+              onClick={() => setShowForgot(true)}
+              style={{ fontSize: 12, color: 'var(--mind)', fontWeight: 600, cursor: 'pointer' }}
+            >
               Forgot password?
             </span>
           </div>
@@ -227,27 +244,47 @@ export default function Login() {
           <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
         </div>
 
-        {/* Social buttons (soon) */}
+        {/* Social buttons */}
         <div style={{ display: 'flex', gap: 10 }}>
-          {['🍎  Apple', '🇬  Google'].map((s) => (
-            <button
-              key={s}
-              disabled
-              style={{
-                flex: 1, padding: '13px 8px',
-                borderRadius: 12, fontSize: 14, fontWeight: 600,
-                fontFamily: 'var(--font)',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.09)',
-                color: 'var(--muted)', cursor: 'not-allowed',
-              }}
-            >
-              {s}
-            </button>
-          ))}
+          {/* Apple — coming soon */}
+          <button
+            disabled
+            style={{
+              flex: 1, padding: '13px 8px',
+              borderRadius: 12, fontSize: 14, fontWeight: 600,
+              fontFamily: 'var(--font)',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.09)',
+              color: 'var(--muted)', cursor: 'not-allowed',
+            }}
+          >
+            🍎  Apple
+          </button>
+
+          {/* Google — live via Supabase OAuth */}
+          <motion.button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={googleBusy}
+            whileTap={{ scale: 0.96 }}
+            style={{
+              flex: 1, padding: '13px 8px',
+              borderRadius: 12, fontSize: 14, fontWeight: 600,
+              fontFamily: 'var(--font)',
+              background: googleBusy
+                ? 'rgba(255,255,255,0.04)'
+                : 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: googleBusy ? 'var(--muted)' : 'var(--text)',
+              cursor: googleBusy ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            {googleBusy ? '…' : '🇬  Google'}
+          </motion.button>
         </div>
         <p style={{ textAlign: 'center', fontSize: 10, color: 'var(--muted)', marginTop: 8, letterSpacing: '0.07em', fontWeight: 700 }}>
-          SOCIAL SIGN-IN — COMING SOON
+          APPLE SIGN-IN — COMING SOON
         </p>
       </motion.div>
 
@@ -284,5 +321,9 @@ export default function Login() {
         ))}
       </motion.div>
     </div>
+
+    {/* Forgot password bottom-sheet modal */}
+    <ForgotPasswordModal isOpen={showForgot} onClose={() => setShowForgot(false)} />
+    </>
   );
 }

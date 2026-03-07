@@ -9,6 +9,7 @@ import SplashScreen from './components/SplashScreen';
 // Auth pages — small, loaded eagerly so login is instant
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import OAuthCallback from './pages/auth/OAuthCallback';
 
 // Feature pages — code-split so initial bundle stays small
 const Home          = lazy(() => import('./pages/Home'));
@@ -45,8 +46,9 @@ export default function App() {
           <Route path="/onboarding" element={<Onboarding />} />
 
           {/* Auth */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/login"          element={<Login />} />
+          <Route path="/register"       element={<Register />} />
+          <Route path="/oauth/callback" element={<OAuthCallback />} />
 
           {/* Public legal pages — no auth required */}
           <Route path="/privacy" element={<PrivacyPolicy />} />
