@@ -7,7 +7,7 @@ import { useAppStore } from '../store/appStore';
 import type { JournalEntry } from '../store/appStore';
 import ConfirmModal from '../components/ConfirmModal';
 
-const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
+const PAGE = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0, transition: { duration: 0.26, ease: [0.16, 1, 0.3, 1] as any } }, exit: { opacity: 0, y: -6, transition: { duration: 0.15 } } };
 
 const MOODS = ['😞','😕','😐','🙂','😊','😄','🥰','🤩'];
 const CATS  = ['reflection','gratitude','goals','memories','emotions','growth'];

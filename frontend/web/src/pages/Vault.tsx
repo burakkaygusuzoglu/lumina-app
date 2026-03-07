@@ -8,7 +8,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { deriveKey, encryptE2E, decryptE2E } from '../lib/crypto';
 import SkeletonCard from '../components/SkeletonCard';
 
-const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
+const PAGE = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0, transition: { duration: 0.26, ease: [0.16, 1, 0.3, 1] as any } }, exit: { opacity: 0, y: -6, transition: { duration: 0.15 } } };
 
 const CATS = [
   { key: '',          label: 'All',       icon: '🛡️' },

@@ -144,28 +144,37 @@ export default function AIAssistant() {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{    scale: 0, opacity: 0 }}
-            whileTap={{ scale: 0.9 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 380 }}
+            whileTap={{ scale: 0.86 }}
             onClick={() => { setOpen(true); setMinimized(false); }}
+            className="ai-fab-pulse"
             style={{
-              position:     'fixed',
-              bottom:       'calc(var(--nav-h) + 16px)',
-              right:        16,
-              width:        52,
-              height:       52,
-              borderRadius: '50%',
-              background:   'var(--gradient)',
-              color:        '#fff',
-              fontSize:     22,
-              display:      'flex',
-              alignItems:   'center',
+              position:       'fixed',
+              bottom:         'calc(var(--nav-h) + 14px)',
+              right:          14,
+              width:          58,
+              height:         58,
+              borderRadius:   '50%',
+              background:     'linear-gradient(135deg, #7b6fda 0%, #5dd7b5 100%)',
+              color:          '#fff',
+              display:        'flex',
+              alignItems:     'center',
               justifyContent: 'center',
-              border:       'none',
-              cursor:       'pointer',
-              zIndex:       70,
-              boxShadow:    '0 4px 20px rgba(123,111,218,0.5)',
+              border:         'none',
+              cursor:         'pointer',
+              zIndex:         70,
+              boxShadow:      '0 6px 28px rgba(123,111,218,0.6), 0 2px 8px rgba(0,0,0,0.35)',
             }}
           >
-            ✦
+            {/* AI Sparkle SVG — 4-pointed star with neural detail */}
+            <svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+              <path d="M15 1.5L17.8 12.2L28.5 15L17.8 17.8L15 28.5L12.2 17.8L1.5 15L12.2 12.2Z" fill="white" opacity="0.96"/>
+              <path d="M15 8L16.4 12.6L21 14L16.4 15.4L15 20L13.6 15.4L9 14L13.6 12.6Z" fill="rgba(123,111,218,0.45)"/>
+              <circle cx="15" cy="3.2" r="1.4" fill="white" opacity="0.5"/>
+              <circle cx="26.8" cy="15" r="1.4" fill="white" opacity="0.5"/>
+              <circle cx="15" cy="26.8" r="1.4" fill="white" opacity="0.5"/>
+              <circle cx="3.2" cy="15" r="1.4" fill="white" opacity="0.5"/>
+            </svg>
           </motion.button>
         )}
       </AnimatePresence>
@@ -201,7 +210,13 @@ export default function AIAssistant() {
               touchAction: 'none',
             }}
           >
-            <span style={{ fontSize: 16 }}>✦</span>
+            <svg width="18" height="18" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+              <path d="M15 1.5L17.8 12.2L28.5 15L17.8 17.8L15 28.5L12.2 17.8L1.5 15L12.2 12.2Z" fill="white" opacity="0.96"/>
+              <circle cx="15" cy="3.2" r="1.4" fill="white" opacity="0.5"/>
+              <circle cx="26.8" cy="15" r="1.4" fill="white" opacity="0.5"/>
+              <circle cx="15" cy="26.8" r="1.4" fill="white" opacity="0.5"/>
+              <circle cx="3.2" cy="15" r="1.4" fill="white" opacity="0.5"/>
+            </svg>
             <span>Lumina AI</span>
             {loading && (
               <span style={{
@@ -256,10 +271,16 @@ export default function AIAssistant() {
                   display:      'flex',
                   alignItems:   'center',
                   justifyContent: 'center',
-                  fontSize:     18,
                 }}
               >
-                ✦
+                <svg width="22" height="22" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+                  <path d="M15 1.5L17.8 12.2L28.5 15L17.8 17.8L15 28.5L12.2 17.8L1.5 15L12.2 12.2Z" fill="white" opacity="0.96"/>
+                  <path d="M15 8L16.4 12.6L21 14L16.4 15.4L15 20L13.6 15.4L9 14L13.6 12.6Z" fill="rgba(123,111,218,0.45)"/>
+                  <circle cx="15" cy="3.2" r="1.4" fill="white" opacity="0.5"/>
+                  <circle cx="26.8" cy="15" r="1.4" fill="white" opacity="0.5"/>
+                  <circle cx="15" cy="26.8" r="1.4" fill="white" opacity="0.5"/>
+                  <circle cx="3.2" cy="15" r="1.4" fill="white" opacity="0.5"/>
+                </svg>
               </div>
               <div style={{ flex: 1 }}>
                 <p style={{ fontSize: 16, fontWeight: 700 }}>Lumina AI</p>

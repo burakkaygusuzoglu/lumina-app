@@ -9,7 +9,7 @@ import type { MoodEntry, SleepEntry } from '../store/appStore';
 import ConfirmModal from '../components/ConfirmModal';
 import SkeletonCard from '../components/SkeletonCard';
 
-const PAGE = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } };
+const PAGE = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0, transition: { duration: 0.26, ease: [0.16, 1, 0.3, 1] as any } }, exit: { opacity: 0, y: -6, transition: { duration: 0.15 } } };
 const MOODS = ['','','','','','','','','',''];
 const MOOD_LABELS = ['Terrible','Bad','Meh','Okay','Good','Great','Amazing','Wonderful','Incredible','Euphoric'];
 const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
@@ -83,6 +83,7 @@ export default function Wellness() {
   const [apptTime, setApptTime]       = useState('');
   const [apptDoctor, setApptDoctor]   = useState('');
   const [deleteApptId, setDeleteApptId] = useState<string | null>(null);
+  const [expandedMoodId, setExpandedMoodId] = useState<string | null>(null);
 
   const { data: moods = [], isLoading: moodsLoading } = useQuery<MoodEntry[]>({
     queryKey: ['moods'],
@@ -97,6 +98,12 @@ export default function Wellness() {
   const { data: appointments = [] } = useQuery<{ id: string; title: string; date: string; time: string; doctor?: string }[]>({
     queryKey: ['appointments'],
     queryFn:  () => api.get('/wellness/appointments').then((r) => r.data).catch(() => []),
+    staleTime: 60_000,
+  });
+
+  const { data: exerciseLogs = [] } = useQuery<{ id: string; exercise_type: string; duration_minutes: number; calories_burned?: number; notes?: string; recorded_at: string }[]>({
+    queryKey: ['exercise-history'],
+    queryFn:  () => api.get('/wellness/exercise/history').then((r) => r.data).catch(() => []),
     staleTime: 60_000,
   });
 
@@ -254,6 +261,64 @@ export default function Wellness() {
               )}
             </div>
 
+            {/* Mood history */}
+            {moods.length > 0 && (
+              <div className="card" style={{ marginBottom: 16 }}>
+                <p className="section-label" style={{ marginBottom: 10 }}>📜 MOOD HISTORY</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {moods.slice(0, 8).map((m) => {
+                    const isOpen = expandedMoodId === m.id;
+                    const color = m.mood_score >= 8 ? 'var(--wellness)' : m.mood_score >= 5 ? 'var(--mind)' : 'var(--journal)';
+                    return (
+                      <motion.div
+                        key={m.id}
+                        layout
+                        onClick={() => setExpandedMoodId(isOpen ? null : m.id)}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: 10,
+                          background: isOpen ? 'rgba(123,111,218,0.08)' : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${isOpen ? 'rgba(123,111,218,0.25)' : 'transparent'}`,
+                          cursor: 'pointer',
+                          transition: 'background 0.18s, border-color 0.18s',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>{MOODS[m.mood_score - 1] ?? ''}</span>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 14, fontWeight: 800, color }}>{m.mood_score}/10</span>
+                              <span style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 600 }}>{MOOD_LABELS[m.mood_score - 1]}</span>
+                            </div>
+                            <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 1 }}>
+                              {new Date(m.created_at).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}
+                              {' · '}
+                              {new Date(m.created_at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          {m.note && <span style={{ fontSize: 13, opacity: isOpen ? 1 : 0.45 }}>📝</span>}
+                          <motion.span
+                            animate={{ rotate: isOpen ? 180 : 0 }}
+                            transition={{ duration: 0.18 }}
+                            style={{ fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}
+                          >▾</motion.span>
+                        </div>
+                        {isOpen && m.note && (
+                          <motion.p
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            style={{ fontSize: 13, color: 'var(--text2)', marginTop: 8, paddingLeft: 34, lineHeight: 1.55 }}
+                          >
+                            {m.note}
+                          </motion.p>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Log mood */}
             <div className="card" style={{ marginBottom: 16 }}>
               <p className="section-label">💚 LOG TODAY'S MOOD</p>
@@ -342,6 +407,36 @@ export default function Wellness() {
                 {exerciseMutation.isPending ? 'Logging…' : '🏃 Log Exercise'}
               </button>
             </div>
+
+            {/* Exercise history */}
+            {exerciseLogs.length > 0 && (() => {
+              const EX_ICONS: Record<string, string> = { running: '🏃', walking: '🚶', cycling: '🚴', swimming: '🏊', yoga: '🧘', weightlifting: '🏋️', hiit: '🔥', sports: '⚽', other: '✨' };
+              return (
+                <div className="card" style={{ marginBottom: 16 }}>
+                  <p className="section-label" style={{ marginBottom: 10 }}>📋 RECENT ACTIVITY</p>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    {exerciseLogs.slice(0, 7).map((e, idx) => (
+                      <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: idx < Math.min(exerciseLogs.length, 7) - 1 ? '1px solid var(--border)' : 'none' }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(61,170,134,0.12)', border: '1px solid rgba(61,170,134,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
+                          {EX_ICONS[e.exercise_type] ?? '🏅'}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, textTransform: 'capitalize' }}>{e.exercise_type.replace(/_/g, ' ')}</p>
+                          <p style={{ fontSize: 11, color: 'var(--muted)' }}>
+                            {new Date(e.recorded_at).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </p>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--wellness)' }}>{e.duration_minutes} min</p>
+                          {e.calories_burned && <p style={{ fontSize: 11, color: 'var(--muted)' }}>{e.calories_burned} kcal</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <p className="section-label">📅 UPCOMING APPOINTMENTS</p>
               <button onClick={() => setShowAppt(true)}
@@ -361,7 +456,7 @@ export default function Wellness() {
                     <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(61,170,134,0.12)', border: '1px solid rgba(61,170,134,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>🏥</div>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontWeight: 700, fontSize: 14 }}>{a.title}</p>
-                      {a.doctor && <p style={{ fontSize: 12, color: 'var(--muted)' }}>Dr. {a.doctor}</p>}
+                      {a.doctor && <p style={{ fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>{a.doctor}</p>}
                       <p style={{ fontSize: 12, color: 'var(--wellness)' }}>{a.date} at {a.time}</p>
                     </div>
                     <button className="btn-icon" onClick={() => setDeleteApptId(a.id)} style={{ color: 'var(--journal)', flexShrink: 0 }}>✕</button>
@@ -392,7 +487,7 @@ export default function Wellness() {
               </div>
               <div className="modal-sheet-body">
                 <input className="field" placeholder="Appointment title*" value={apptTitle} onChange={(e) => setApptTitle(e.target.value)} style={{ marginBottom: 10 }} autoFocus />
-                <input className="field" placeholder="Doctor name (optional)" value={apptDoctor} onChange={(e) => setApptDoctor(e.target.value)} style={{ marginBottom: 10 }} />
+                <input className="field" placeholder="Notes / additional details (optional)" value={apptDoctor} onChange={(e) => setApptDoctor(e.target.value)} style={{ marginBottom: 10 }} />
                 <div style={{ display: 'flex', gap: 10 }}>
                   <input type="date" className="field" value={apptDate} onChange={(e) => setApptDate(e.target.value)} style={{ flex: 1 }} />
                   <input type="time" className="field" value={apptTime} onChange={(e) => setApptTime(e.target.value)} style={{ flex: 1 }} />

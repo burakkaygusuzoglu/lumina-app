@@ -628,6 +628,38 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .float { animation: float-y 3s ease-in-out infinite; }
 
+/* ── AI FAB Pulse ring ── */
+.ai-fab-pulse {
+  position: relative;
+}
+.ai-fab-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid rgba(123, 111, 218, 0.55);
+  animation: ai-ring-pulse 2.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  pointer-events: none;
+}
+@keyframes ai-ring-pulse {
+  0%   { transform: scale(1);    opacity: 0.75; }
+  65%  { transform: scale(1.38); opacity: 0; }
+  100% { transform: scale(1.38); opacity: 0; }
+}
+
+/* ── Global micro-interaction polish ── */
+/* Ensure all interactive elements have smooth transitions */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+/* Card tap feedback on mobile */
+.card-hover:active {
+  transform: scale(0.982) translateY(0) !important;
+  transition-duration: 0.08s !important;
+}
+
+
+
 /* ── Priority glow strip ── */
 .priority-urgent { border-left: 3px solid #c4607a !important; }
 .priority-high   { border-left: 3px solid #d4864a !important; }

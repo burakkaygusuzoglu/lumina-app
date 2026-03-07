@@ -280,20 +280,6 @@ export default function Onboarding() {
                 </button>
               </div>
 
-              {/* Skip */}
-              <button
-                onClick={skipToLogin}
-                style={{
-                  background: 'none', border: 'none',
-                  color: 'var(--muted)', fontSize: 14,
-                  cursor: 'pointer', width: '100%',
-                  marginTop: 16, paddingBlock: 8,
-                  fontFamily: 'var(--font)',
-                }}
-              >
-                Skip
-              </button>
-
               <p style={{
                 fontSize: 11, color: 'var(--muted)', opacity: 0.6,
                 textAlign: 'center', marginTop: 12,
@@ -367,20 +353,7 @@ export default function Onboarding() {
           />
         </div>
 
-        {/* Skip */}
-        <button
-          onClick={() => { localStorage.setItem('lumina_onboarded', '1'); navigate('/login'); }}
-          style={{
-            background: 'none', border: 'none',
-            color: 'var(--muted)', fontSize: 13,
-            cursor: 'pointer', fontWeight: 600,
-            fontFamily: 'var(--font)',
-            padding: '4px 0 4px 8px',
-            flexShrink: 0,
-          }}
-        >
-          Skip
-        </button>
+
       </div>
 
       {/* ── SLIDE CONTENT ── */}

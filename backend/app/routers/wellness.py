@@ -226,6 +226,28 @@ async def log_exercise(
     return data
 
 
+@router.get(
+    "/exercise/history",
+    status_code=status.HTTP_200_OK,
+    summary="Get exercise history",
+)
+async def get_exercise_history(
+    limit: int = Query(20, ge=1, le=50),
+    current_user: TokenData = Depends(get_current_user),
+) -> list[dict]:
+    """Return recent exercise logs for the authenticated user, newest first."""
+    from app.config import supabase_admin
+    result = (
+        supabase_admin.table("exercise_logs")
+        .select("*")
+        .eq("user_id", current_user.user_id)
+        .order("recorded_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return result.data or []
+
+
 # ── Stats & Streak ────────────────────────────────────────────────────────────
 
 @router.get(
