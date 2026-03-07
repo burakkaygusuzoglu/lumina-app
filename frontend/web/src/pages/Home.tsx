@@ -317,7 +317,7 @@ export default function Home() {
                       }}
                     />
                     <span style={{ fontSize: 9, color: 'var(--muted)' }}>
-                      {entry ? new Date(entry.recorded_at || entry.created_at).toLocaleDateString('en', { weekday: 'narrow' }) : ''}
+                      {entry ? new Date(entry.created_at).toLocaleDateString('en', { weekday: 'narrow' }) : ''}
                     </span>
                   </div>
                 );
