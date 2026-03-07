@@ -26,10 +26,6 @@ const QUICK_MOODS = [
   { score: 10, emoji: '🤩', label: 'Lit',   color: '#f472b6' },
 ];
 
-function Skel({ h = 16, w = '100%', r = 8 }: { h?: number; w?: number | string; r?: number }) {
-  return <div className="skeleton" style={{ height: h, width: w, borderRadius: r }} />;
-}
-
 function getGreeting() {
   const h = new Date().getHours();
   if (h < 12) return 'Good morning';
@@ -45,12 +41,6 @@ export default function Home() {
   const firstName = user?.full_name?.split(' ')[0] ?? 'there';
   const addToast  = useAppStore((s) => s.addToast);
   const [moodSaved, setMoodSaved] = useState(false);
-
-  const { data: greetData, isLoading: greetLoading } = useQuery<{ greeting: string }>({
-    queryKey: ['greeting'],
-    queryFn:  () => api.get('/ai/greeting').then((r) => r.data),
-    staleTime: 60 * 60 * 1000,
-  });
 
   const { data: tasks = [] } = useQuery<Task[]>({
     queryKey: ['tasks'],
@@ -89,7 +79,6 @@ export default function Home() {
   const todayTasks  = tasks.filter((t) => !t.is_completed).slice(0, 4);
   const last7Moods  = [...moods].slice(0, 7).reverse();
   const recentMems  = memories.slice(0, 6);
-  const avgMood     = moods.length ? Math.round(moods.slice(0,7).reduce((a,m) => a + m.mood_score, 0) / Math.min(moods.length, 7)) : 0;
 
   return (
     <motion.div {...PAGE_ANIM} className="page">
@@ -123,47 +112,25 @@ export default function Home() {
         </div>
       </div>
 
-      {/*  AI Greeting / Briefing  */}
-      <div
-        className="card glass glow-hover"
+      {/*  Ask Lumina AI CTA  */}
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={() => document.getElementById('lumina-ai-trigger')?.click()}
         style={{
-          background: 'linear-gradient(135deg, rgba(123,111,218,0.12), rgba(61,170,134,0.12))',
-          borderColor: 'rgba(123,111,218,0.25)',
-          marginBottom: 20,
-          position: 'relative',
-          overflow: 'hidden',
-          padding: 20,
+          width: '100%', marginBottom: 20, padding: '18px 20px',
+          background: 'linear-gradient(135deg, rgba(123,111,218,0.15), rgba(196,96,122,0.1))',
+          border: '1px solid rgba(123,111,218,0.3)', borderRadius: 24,
+          cursor: 'pointer', textAlign: 'left', position: 'relative', overflow: 'hidden',
+          display: 'block',
         }}
       >
-        <div style={{ position: 'absolute', top: -20, right: -20, fontSize: 80, opacity: 0.06 }}>✨</div>
-        <p style={{ fontSize: 10, fontWeight: 800, color: 'var(--mind)', letterSpacing: '0.12em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-           <span className="pulse-dot" style={{ background: 'var(--mind)' }} />
-           AI BRIEFING
+        <div style={{ position: 'absolute', top: -20, right: -20, fontSize: 80, opacity: 0.06 }}>✦</div>
+        <p style={{ fontSize: 10, fontWeight: 800, color: 'var(--mind)', letterSpacing: '0.12em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          ✦ <span className="pulse-dot" style={{ background: 'var(--mind)' }} /> LUMINA AI
         </p>
-        {greetLoading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <Skel h={14} w="90%" />
-            <Skel h={14} w="85%" />
-            <Skel h={14} w="65%" />
-          </div>
-        ) : (
-          <motion.p
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
-            style={{ fontSize: 14, lineHeight: 1.65, color: 'var(--text)', fontWeight: 500 }}
-          >
-            {greetData?.greeting ?? 'Welcome back to Lumina. Your journey continues.'}
-          </motion.p>
-        )}
-        {avgMood > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
-            <span style={{ fontSize: 11, color: 'var(--muted)' }}>7-day avg mood</span>
-            <div style={{ height: 4, flex: 1, borderRadius: 4, background: 'var(--surface2)', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${avgMood * 10}%`, background: 'var(--gradient)', borderRadius: 4 }} />
-            </div>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--mind)' }}>{avgMood}/10</span>
-          </div>
-        )}
-      </div>
+        <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Ask me anything...</p>
+        <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 400 }}>Journal prompts · Mood analysis · Task advice</p>
+      </motion.button>
 
       {/*  Quick mood check-in — TikTok/Instagram reaction style  */}
       <div

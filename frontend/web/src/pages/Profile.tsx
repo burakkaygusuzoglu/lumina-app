@@ -29,7 +29,7 @@ export default function Profile() {
     mutationFn: () => api.put('/auth/profile', { full_name: name }).then((r) => r.data),
     onSuccess: (data) => {
       useAuthStore.getState().setUser(data);
-      addToast('success', 'Profile updated ><“');
+      addToast('success', 'Profile updated ✓');
       setEditing(false);
     },
     onError: () => addToast('error', 'Failed to update profile'),
@@ -73,7 +73,7 @@ export default function Profile() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      addToast('success', 'Data exported successfully! “¦');
+      addToast('success', 'Data exported successfully!');
     } catch (error) {
       addToast('error', 'Export failed');
     }
@@ -94,7 +94,7 @@ export default function Profile() {
           const data = JSON.parse(contents);
           console.log("Importing data:", data);
           // In a real scenario, this would send mapped data to /import endpoint
-          addToast('success', 'Data imported successfully! ><¨ Refetching...');
+          addToast('success', 'Data imported successfully!');
         } catch (err) {
           addToast('error', 'Invalid file format');
         }
@@ -173,7 +173,7 @@ export default function Profile() {
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid var(--border)', color: 'var(--text)', textAlign: 'left' }}>
               <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>{item.icon}</span>
               <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{item.label}</span>
-              <span style={{ color: 'var(--muted)' }}>€º</span>
+              <span style={{ color: 'var(--muted)' }}>›</span>
             </button>
           ))}
         </div>
@@ -183,15 +183,15 @@ export default function Profile() {
           <p className="section-label" style={{ marginBottom: 12, color: 'var(--journal)' }}>DANGER ZONE</p>
           <button onClick={() => setShowLogout(true)}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid var(--border)', color: 'var(--text)', textAlign: 'left' }}>
-            <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}></span>
+            <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>🚪</span>
             <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>Sign Out</span>
-            <span style={{ color: 'var(--muted)' }}>€º</span>
+            <span style={{ color: 'var(--muted)' }}>›</span>
           </button>
           <button onClick={() => setShowDelete(true)}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--journal)', textAlign: 'left' }}>
-            <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>—‘</span>
+            <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>🗑️</span>
             <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>Delete Account</span>
-            <span>€º</span>
+            <span style={{ color: 'var(--muted)' }}>›</span>
           </button>
         </div>
 

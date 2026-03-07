@@ -63,9 +63,14 @@ async def chat(
     """
     memory_context: list = []
     if payload.include_memories:
-        memory_context = await _memories.get_recent_memories(
-            user_id=current_user.user_id, limit=10
-        )
+        try:
+            memory_context = await _memories.get_recent_memories(
+                user_id=current_user.user_id, limit=10
+            )
+        except Exception as exc:
+            logger.warning(
+                "Memory fetch failed for chat (continuing without context): %s", exc
+            )
 
     history = [
         {"role": m.role, "content": m.content}

@@ -89,6 +89,8 @@ export default function AIAssistant() {
     try {
       const { data } = await api.post('/ai/chat', {
         message: `[Context: user is on ${context}]\n\n${text}`,
+        include_memories: true,
+        conversation_history: messages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
       });
       const aiMsg: Message = {
         id:      (Date.now() + 1).toString(),
@@ -96,11 +98,18 @@ export default function AIAssistant() {
         content: data.reply ?? data.response ?? data.message ?? "I'm here to help.",
       };
       setMessages((prev) => [...prev, aiMsg]);
-    } catch {
+    } catch (err: unknown) {
+      console.error('[Lumina AI] chat error:', err);
+      const httpStatus = (err as any)?.response?.status;
+      const detail     = (err as any)?.response?.data?.detail;
       const errMsg: Message = {
         id:      (Date.now() + 1).toString(),
         role:    'assistant',
-        content: 'Sorry, I had trouble connecting. Please try again.',
+        content: httpStatus === 401
+          ? 'Please sign in again to continue.'
+          : detail
+            ? `Error: ${detail}`
+            : 'Sorry, I had trouble connecting. Please try again.',
       };
       setMessages((prev) => [...prev, errMsg]);
     } finally {
