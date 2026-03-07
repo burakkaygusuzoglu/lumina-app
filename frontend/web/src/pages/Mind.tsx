@@ -108,6 +108,13 @@ function MemoryForm({ initial, onClose }: NewMemorySheetProps) {
     <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
       <motion.div className="modal-sheet" initial={{ y: 400 }} animate={{ y: 0 }} exit={{ y: 400 }}
+        drag="y"
+        dragConstraints={{ top: 0 }}
+        dragElastic={{ top: 0.05, bottom: 0.6 }}
+        dragMomentum={false}
+        onDragEnd={(_, info) => {
+          if (info.offset.y > 90 || info.velocity.y > 400) onClose();
+        }}
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}>
         <div className="modal-handle" />
         <div className="flex justify-between items-center mb-16">

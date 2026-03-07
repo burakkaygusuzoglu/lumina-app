@@ -64,12 +64,12 @@ export default function Life() {
         if (s <= 1) {
           if (pomRef.current) clearInterval(pomRef.current);
           if (pomState === 'work') {
-            addToast('success', '🍅 Pomodoro tamamlandı! Mola zamanı.');
+            addToast('success', '🍅 Pomodoro complete! Time for a break.');
             triggerHaptic('success');
             setPomState('break');
             return 5 * 60;
           } else {
-            addToast('info', '☕ Mola bitti! Tekrar odaklan.');
+            addToast('info', '☕ Break over! Back to focus.');
             setPomState('idle');
             return 25 * 60;
           }
@@ -215,19 +215,19 @@ export default function Life() {
               {pomMin}:{pomSecStr}
             </p>
             <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-              {pomState === 'idle' ? '25 dak odak · 5 dak mola' : pomState === 'work' ? '🔥 Odak modu' : '☕ Mola zamanı'}
+              {pomState === 'idle' ? '25 min focus · 5 min break' : pomState === 'work' ? '🔥 Focus mode' : '☕ Break time'}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {pomState === 'idle' ? (
               <motion.button whileTap={{ scale: 0.92 }} onClick={() => { setPomState('work'); setPomSecs(25 * 60); triggerHaptic('medium'); }}
                 style={{ padding: '10px 18px', borderRadius: 12, background: 'rgba(196,96,122,0.15)', border: '1px solid rgba(196,96,122,0.3)', color: 'var(--journal)', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-                ▶ Başlat
+                ▶ Start
               </motion.button>
             ) : (
               <motion.button whileTap={{ scale: 0.92 }} onClick={() => { setPomState('idle'); setPomSecs(25 * 60); triggerHaptic('medium'); }}
                 style={{ padding: '10px 18px', borderRadius: 12, background: 'rgba(107,114,128,0.15)', border: '1px solid rgba(107,114,128,0.3)', color: 'var(--muted)', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-                ■ Durdur
+                ■ Stop
               </motion.button>
             )}
           </div>
@@ -318,7 +318,15 @@ export default function Life() {
         {showForm && (
           <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={(e) => e.target === e.currentTarget && setShowForm(false)}>
-            <motion.div className="modal-sheet glass-modal" initial={{ y: 500 }} animate={{ y: 0 }} exit={{ y: 500 }}
+          <motion.div className="modal-sheet glass-modal"
+              initial={{ y: 500 }} animate={{ y: 0 }} exit={{ y: 500 }}
+              drag="y"
+              dragConstraints={{ top: 0 }}
+              dragElastic={{ top: 0.05, bottom: 0.6 }}
+              dragMomentum={false}
+              onDragEnd={(_, info) => {
+                if (info.offset.y > 90 || info.velocity.y > 400) setShowForm(false);
+              }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}>
               <div className="modal-handle" />
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -374,7 +382,15 @@ export default function Life() {
         {editTask && (
           <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={(e) => e.target === e.currentTarget && setEditTask(null)}>
-            <motion.div className="modal-sheet" initial={{ y: 500 }} animate={{ y: 0 }} exit={{ y: 500 }}
+            <motion.div className="modal-sheet"
+              initial={{ y: 500 }} animate={{ y: 0 }} exit={{ y: 500 }}
+              drag="y"
+              dragConstraints={{ top: 0 }}
+              dragElastic={{ top: 0.05, bottom: 0.6 }}
+              dragMomentum={false}
+              onDragEnd={(_, info) => {
+                if (info.offset.y > 90 || info.velocity.y > 400) setEditTask(null);
+              }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}>
               <div className="modal-handle" />
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>

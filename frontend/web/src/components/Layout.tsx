@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Brain, Activity, Target, BookOpen, User } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import Toast from './Toast';
 import AIAssistant from './AIAssistant';
 
@@ -27,7 +28,27 @@ const TABS: NavTab[] = [
 export default function Layout() {
   const navigate  = useNavigate();
   const location  = useLocation();
+  const qc        = useQueryClient();
   const isActive  = (path: string) => location.pathname === path;
+
+  // ━━ Midnight day-transition: invalidate all queries at 00:00 local time ━━
+  useEffect(() => {
+    function scheduleNextMidnight() {
+      const now = new Date();
+      const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
+      const msUntil = nextMidnight.getTime() - now.getTime();
+      return setTimeout(() => {
+        // Invalidate every cached query so pages refresh with new-day data
+        qc.invalidateQueries();
+        // Reset water counter so Wellness page starts fresh
+        localStorage.removeItem('water_today');
+        // Re-schedule for the following midnight
+        scheduleNextMidnight();
+      }, msUntil);
+    }
+    const t = scheduleNextMidnight();
+    return () => clearTimeout(t);
+  }, [qc]);
 
   // iOS keyboard avoidance — shrink .page-scroll when virtual keyboard opens
   useEffect(() => {

@@ -167,7 +167,7 @@ export default function Wellness() {
     const next = Math.max(0, Math.min(WATER_GOAL, waterConsumed + delta));
     setWater(next);
     localStorage.setItem('water_today', JSON.stringify({ date: new Date().toDateString(), count: next }));
-    if (delta > 0 && next === WATER_GOAL) addToast('success', 'Hidrasyon hedefine ulaştın! 💧');
+    if (delta > 0 && next === WATER_GOAL) addToast('success', 'Daily water goal reached! 💧');
   }
 
 
@@ -236,14 +236,14 @@ export default function Wellness() {
                     <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                       {bestMood && (
                         <div style={{ flex: 1, padding: '8px 12px', borderRadius: 10, background: 'rgba(61,170,134,0.1)', border: '1px solid rgba(61,170,134,0.2)' }}>
-                          <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700 }}>EN İYİ GÜN</p>
+                          <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700 }}>BEST DAY</p>
                           <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--wellness)' }}>{bestMood.mood_score}/10</p>
                           <p style={{ fontSize: 10, color: 'var(--muted)' }}>{new Date(bestMood.created_at).toLocaleDateString('tr', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
                         </div>
                       )}
                       {worstMood && worstMood.id !== bestMood?.id && (
                         <div style={{ flex: 1, padding: '8px 12px', borderRadius: 10, background: 'rgba(196,96,122,0.1)', border: '1px solid rgba(196,96,122,0.2)' }}>
-                          <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700 }}>EN ZOR GÜN</p>
+                          <p style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700 }}>HARDEST DAY</p>
                           <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--journal)' }}>{worstMood.mood_score}/10</p>
                           <p style={{ fontSize: 10, color: 'var(--muted)' }}>{new Date(worstMood.created_at).toLocaleDateString('tr', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
                         </div>

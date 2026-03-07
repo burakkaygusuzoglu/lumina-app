@@ -115,7 +115,39 @@ export default function Profile() {
     <motion.div {...PAGE} className="page">
       <div style={{ marginBottom: 24 }}><AICard insight={aiInsight} /></div>
 
-      {/* Avatar + name */}
+      {/* ── Vault quick-access ── */}
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={() => navigate('/vault')}
+        style={{
+          width: '100%',
+          padding: '18px 20px',
+          borderRadius: 18,
+          background: 'linear-gradient(135deg, rgba(212,134,74,0.14) 0%, rgba(212,134,74,0.04) 100%)',
+          border: '1px solid rgba(212,134,74,0.28)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          cursor: 'pointer',
+          color: 'var(--text)',
+          marginBottom: 20,
+          boxShadow: '0 2px 12px rgba(212,134,74,0.10)',
+          textAlign: 'left',
+        }}
+      >
+        <div style={{
+          width: 48, height: 48, borderRadius: 16,
+          background: 'linear-gradient(135deg, rgba(212,134,74,0.25), rgba(212,134,74,0.08))',
+          border: '1px solid rgba(212,134,74,0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 24, flexShrink: 0,
+        }}>🛡️</div>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 3 }}>Zero-Knowledge Vault</p>
+          <p style={{ fontSize: 12, color: 'var(--muted)' }}>Passwords, cards &amp; encrypted notes</p>
+        </div>
+        <span style={{ fontSize: 18, color: 'var(--vault)' }}>›</span>
+      </motion.button>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28, paddingTop: 8 }}>
         <div style={{ position: 'relative', marginBottom: 16 }}>
           <div

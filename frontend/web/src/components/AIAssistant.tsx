@@ -67,11 +67,12 @@ export default function AIAssistant() {
     }
   });
   const location = useLocation();
-  const [open,     setOpen]     = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input,    setInput]    = useState('');
-  const [loading,  setLoading]  = useState(false);
-  const bottomRef              = useRef<HTMLDivElement>(null);
+  const [open,      setOpen]     = useState(false);
+  const [minimized, setMinimized] = useState(false);
+  const [messages,  setMessages] = useState<Message[]>([]);
+  const [input,     setInput]    = useState('');
+  const [loading,   setLoading]  = useState(false);
+  const bottomRef               = useRef<HTMLDivElement>(null);
   // Only fetch memories on the first message of each session for speed
   const memoriesLoaded = useRef(false);
 
@@ -135,7 +136,7 @@ export default function AIAssistant() {
 
   return (
     <>
-      {/* Floating button */}
+      {/* FAB — only visible when chat is closed */}
       <AnimatePresence>
         {!open && (
           <motion.button
@@ -144,7 +145,7 @@ export default function AIAssistant() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{    scale: 0, opacity: 0 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => setOpen(true)}
+            onClick={() => { setOpen(true); setMinimized(false); }}
             style={{
               position:     'fixed',
               bottom:       'calc(var(--nav-h) + 16px)',
@@ -169,23 +170,69 @@ export default function AIAssistant() {
         )}
       </AnimatePresence>
 
-      {/* Chat modal */}
+      {/* Minimized PiP pill — draggable, tap to restore */}
       <AnimatePresence>
-        {open && (
+        {open && minimized && (
+          <motion.button
+            drag
+            dragMomentum={false}
+            initial={{ scale: 0, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{    scale: 0, opacity: 0, y: 20 }}
+            whileTap={{ scale: 0.92 }}
+            onClick={() => setMinimized(false)}
+            style={{
+              position:  'fixed',
+              bottom:    'calc(var(--nav-h) + 16px)',
+              right:     72,
+              zIndex:    80,
+              background: 'var(--gradient)',
+              borderRadius: 28,
+              padding:   '10px 18px',
+              display:   'flex',
+              alignItems: 'center',
+              gap:        8,
+              color:     '#fff',
+              fontSize:  13,
+              fontWeight: 700,
+              boxShadow: '0 4px 20px rgba(123,111,218,0.45), 0 2px 8px rgba(0,0,0,0.3)',
+              border:    'none',
+              cursor:    'pointer',
+              touchAction: 'none',
+            }}
+          >
+            <span style={{ fontSize: 16 }}>✦</span>
+            <span>Lumina AI</span>
+            {loading && (
+              <span style={{
+                width: 7, height: 7, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.8)',
+                display: 'inline-block',
+                animation: 'bounce 0.8s ease infinite',
+              }} />
+            )}
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Full-screen chat */}
+      <AnimatePresence>
+        {open && !minimized && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{    opacity: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{    opacity: 0, y: 20 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
             style={{
               position:   'fixed',
-              inset:       0,
+              top:        0,
+              left:       0,
+              right:      0,
+              bottom:     0,
               background:  'var(--bg)',
               zIndex:      150,
               display:     'flex',
               flexDirection: 'column',
-              maxWidth:    430,
-              left:        '50%',
-              transform:   'translateX(-50%)',
             }}
           >
             {/* Header */}
@@ -195,6 +242,7 @@ export default function AIAssistant() {
                 alignItems:     'center',
                 gap:            12,
                 padding:        '16px 20px',
+                paddingTop:     'max(16px, calc(env(safe-area-inset-top, 0px) + 10px))',
                 borderBottom:   '1px solid var(--border)',
                 background:     'var(--bg2)',
               }}
@@ -219,7 +267,13 @@ export default function AIAssistant() {
                   {ROUTE_CONTEXT[location.pathname] ?? 'Your personal AI'}
                 </p>
               </div>
-              <button className="btn-icon" onClick={() => { setOpen(false); memoriesLoaded.current = false; }}>✕</button>
+              <button className="btn-icon" onClick={() => setMinimized(true)} title="Minimize"
+                style={{ marginRight: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>
+              <button className="btn-icon" onClick={() => { setOpen(false); setMinimized(false); memoriesLoaded.current = false; }}>✕</button>
             </div>
 
             {/* Messages */}
@@ -350,6 +404,7 @@ export default function AIAssistant() {
             <div
               style={{
                 padding:      '12px 16px',
+                paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px))',
                 borderTop:    '1px solid var(--border)',
                 background:   'var(--bg2)',
                 display:      'flex',
